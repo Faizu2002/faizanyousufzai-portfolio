@@ -1,5 +1,5 @@
 /* =========================================================
-   FaizanYousufzai.online — Global Auth UI
+   FaizanYousufzai.online â€” Global Auth UI
    Dedicated stylesheet loaded automatically by auth-ui.js
 ========================================================= */
 
@@ -575,5 +575,31 @@ body.fy-auth-modal-open{
   .fy-auth-dialog,
   .fy-auth-toast{
     transition:none!important;
+  }
+}
+
+
+/* CLOUDFLARE TURNSTILE */
+
+.fy-turnstile-wrap{
+  min-height:68px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  overflow:hidden;
+  margin:1px 0 2px;
+}
+
+.fy-turnstile-wrap > div{
+  max-width:100%;
+}
+
+.fy-turnstile-wrap iframe{
+  max-width:100%!important;
+}
+
+@media(max-width:390px){
+  .fy-turnstile-wrap{
+    transform-origin:left center;
   }
 }
