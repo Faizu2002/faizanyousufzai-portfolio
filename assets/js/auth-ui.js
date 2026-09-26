@@ -202,16 +202,38 @@
 
   function loadAuthCss() {
 
-    if (
+  return new Promise(resolve => {
+
+    const existing =
       document.querySelector(
         'link[data-auth-ui-css]'
-      )
-    ) {
+      );
+
+
+    if (existing) {
+
+      if (existing.sheet) {
+        resolve();
+        return;
+      }
+
+      existing.addEventListener(
+        'load',
+        resolve,
+        { once: true }
+      );
+
+      existing.addEventListener(
+        'error',
+        resolve,
+        { once: true }
+      );
+
       return;
     }
 
 
-    const exists =
+    const alreadyLoaded =
       [...document.styleSheets]
         .some(sheet => {
 
@@ -232,20 +254,40 @@
         });
 
 
-    if (exists) return;
+    if (alreadyLoaded) {
+
+      resolve();
+
+      return;
+    }
 
 
     const link =
       document.createElement('link');
 
+
     link.rel = 'stylesheet';
 
-    link.href = AUTH_CSS;
+    link.href =
+      '/assets/css/auth-ui.css';
 
-    link.dataset.authUiCss = 'true';
 
-    document.head.appendChild(link);
-  }
+    link.dataset.authUiCss =
+      'true';
+
+
+    link.onload = resolve;
+
+    link.onerror = resolve;
+
+
+    document.head.appendChild(
+      link
+    );
+
+  });
+
+}
 
 
   /* =========================================================
