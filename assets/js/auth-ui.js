@@ -1,7 +1,6 @@
 /* =========================================================
    FaizanYousufzai.online — Global Auth UI
-   Supabase Auth + profile/account dropdown
-   Load this file once through main.js and blog.js.
+   Supabase Auth + Cloudflare Turnstile
 ========================================================= */
 
 (() => {
@@ -10,27 +9,59 @@
   if (window.__FAIZAN_AUTH_UI_LOADED__) return;
   window.__FAIZAN_AUTH_UI_LOADED__ = true;
 
-  const SUPABASE_URL = 'https://xuzolqglwlgvsazlojsy.supabase.co';
-  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_vP0WCXtMMSbgsnXmwjVLFQ_qleCkmhr';
-  const SUPABASE_CDN = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-  const AUTH_CSS = '/assets/css/auth-ui.css';
+  const SUPABASE_URL =
+    'https://xuzolqglwlgvsazlojsy.supabase.co';
 
-  let client = null;
+  const SUPABASE_PUBLISHABLE_KEY =
+    'sb_publishable_vP0WCXtMMSbgsnXmwjVLFQ_qleCkmhr';
+
+  const SUPABASE_CDN =
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+
+  const CONFIG_JS =
+    '/assets/js/supabase-config.js';
+
+  const AUTH_CSS =
+    '/assets/css/auth-ui.css';
+
+  const TURNSTILE_CDN =
+    'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+
+
+  let sb = null;
   let currentUser = null;
   let currentProfile = null;
-  let authSubscription = null;
 
-  /* -----------------------------
-     Helpers
-  ----------------------------- */
 
-  function $(selector, root = document) {
-    return root.querySelector(selector);
-  }
+  const captcha = {
+    login: {
+      widgetId: null,
+      token: ''
+    },
 
-  function $$(selector, root = document) {
-    return [...root.querySelectorAll(selector)];
-  }
+    signup: {
+      widgetId: null,
+      token: ''
+    },
+
+    reset: {
+      widgetId: null,
+      token: ''
+    }
+  };
+
+
+  /* =========================================================
+     HELPERS
+  ========================================================= */
+
+  const $ = (selector, root = document) =>
+    root.querySelector(selector);
+
+
+  const $$ = (selector, root = document) =>
+    [...root.querySelectorAll(selector)];
+
 
   function escapeHtml(value = '') {
     return String(value)
@@ -41,24 +72,31 @@
       .replace(/'/g, '&#039;');
   }
 
+
   function cleanName(value = '') {
-    return String(value).trim().replace(/\s+/g, ' ').slice(0, 50);
+    return String(value)
+      .trim()
+      .replace(/\s+/g, ' ')
+      .slice(0, 50);
   }
 
-  function emailPrefix(email = '') {
+
+  function nameFromEmail(email = '') {
     return String(email).split('@')[0] || 'Member';
   }
 
-  function displayNameFor(user, profile) {
+
+  function userName() {
     return (
-      profile?.display_name ||
-      user?.user_metadata?.display_name ||
-      user?.user_metadata?.full_name ||
-      emailPrefix(user?.email)
+      currentProfile?.display_name ||
+      currentUser?.user_metadata?.display_name ||
+      currentUser?.user_metadata?.full_name ||
+      nameFromEmail(currentUser?.email)
     );
   }
 
-  function initialsFor(name = '') {
+
+  function initials(name = '') {
     const parts = String(name)
       .trim()
       .split(/\s+/)
@@ -68,313 +106,848 @@
     if (!parts.length) return 'A';
 
     return parts
-      .map(part => part[0])
+      .map(part => part.charAt(0))
       .join('')
-      .toUpperCase()
-      .slice(0, 2);
+      .toUpperCase();
   }
 
-  function setButtonBusy(button, busy, busyText = 'Please wait…') {
-    if (!button) return;
-
-    if (busy) {
-      button.dataset.oldText = button.textContent;
-      button.textContent = busyText;
-      button.disabled = true;
-      button.setAttribute('aria-busy', 'true');
-    } else {
-      button.textContent = button.dataset.oldText || button.textContent;
-      button.disabled = false;
-      button.removeAttribute('aria-busy');
-    }
-  }
 
   function friendlyError(error) {
-    const raw = String(error?.message || error || 'Something went wrong.').trim();
+    const message = String(
+      error?.message ||
+      error ||
+      'Something went wrong.'
+    );
 
-    const lower = raw.toLowerCase();
+    const lower = message.toLowerCase();
 
-    if (lower.includes('invalid login credentials')) {
+
+    if (
+      lower.includes('invalid login credentials')
+    ) {
       return 'Email or password is incorrect.';
     }
 
-    if (lower.includes('email not confirmed')) {
+
+    if (
+      lower.includes('email not confirmed')
+    ) {
       return 'Please confirm your email before logging in.';
     }
 
-    if (lower.includes('user already registered')) {
+
+    if (
+      lower.includes('user already registered')
+    ) {
       return 'An account with this email already exists.';
     }
 
-    if (lower.includes('password should be at least')) {
+
+    if (
+      lower.includes('password should be at least')
+    ) {
       return 'Password must be at least 8 characters.';
     }
 
-    if (lower.includes('same password')) {
-      return 'Please choose a different password.';
+
+    if (
+      lower.includes('captcha') ||
+      lower.includes('captcha_token')
+    ) {
+      return 'Please complete the security check and try again.';
     }
 
-    if (lower.includes('rate limit')) {
-      return 'Too many attempts. Please try again in a little while.';
+
+    if (
+      lower.includes('rate limit')
+    ) {
+      return 'Too many attempts. Please try again shortly.';
     }
 
-    return raw;
+
+    return message;
   }
 
-  /* -----------------------------
-     Asset loading
-  ----------------------------- */
 
-  function loadCssOnce() {
+  function busy(
+    button,
+    state,
+    text = 'Please wait…'
+  ) {
+    if (!button) return;
+
+    if (state) {
+
+      button.dataset.oldText =
+        button.textContent;
+
+      button.textContent = text;
+
+      button.disabled = true;
+
+    } else {
+
+      button.textContent =
+        button.dataset.oldText ||
+        button.textContent;
+
+      button.disabled = false;
+    }
+  }
+
+
+  /* =========================================================
+     LOAD CSS
+  ========================================================= */
+
+  function loadAuthCss() {
+
     if (
-      document.querySelector('link[data-faizan-auth-css]') ||
-      [...document.styleSheets].some(sheet => {
-        try {
-          return sheet.href && sheet.href.includes('/assets/css/auth-ui.css');
-        } catch {
-          return false;
-        }
-      })
+      document.querySelector(
+        'link[data-auth-ui-css]'
+      )
     ) {
       return;
     }
 
-    const link = document.createElement('link');
+
+    const exists =
+      [...document.styleSheets]
+        .some(sheet => {
+
+          try {
+
+            return (
+              sheet.href &&
+              sheet.href.includes(
+                '/assets/css/auth-ui.css'
+              )
+            );
+
+          } catch {
+
+            return false;
+          }
+
+        });
+
+
+    if (exists) return;
+
+
+    const link =
+      document.createElement('link');
+
     link.rel = 'stylesheet';
+
     link.href = AUTH_CSS;
-    link.dataset.faizanAuthCss = 'true';
+
+    link.dataset.authUiCss = 'true';
+
     document.head.appendChild(link);
   }
 
-  function loadScript(src) {
-    return new Promise((resolve, reject) => {
-      const existing = [...document.scripts]
-        .find(script => script.src === src || script.src.includes('@supabase/supabase-js'));
 
-      if (existing) {
-        if (window.supabase?.createClient) {
+  /* =========================================================
+     SCRIPT LOADER
+  ========================================================= */
+
+  function loadScript(
+    src,
+    test,
+    matcher
+  ) {
+
+    return new Promise(
+      (resolve, reject) => {
+
+        if (test?.()) {
+
           resolve();
+
           return;
         }
 
-        existing.addEventListener('load', resolve, { once: true });
-        existing.addEventListener(
-          'error',
-          () => reject(new Error('Could not load authentication library.')),
-          { once: true }
-        );
-        return;
-      }
 
-      const script = document.createElement('script');
-      script.src = src;
-      script.async = true;
-      script.crossOrigin = 'anonymous';
+        const existing =
+          [...document.scripts]
+            .find(script => {
 
-      script.addEventListener('load', resolve, { once: true });
-      script.addEventListener(
-        'error',
-        () => reject(new Error('Could not load authentication library.')),
-        { once: true }
-      );
+              if (matcher) {
+                return matcher(script);
+              }
 
-      document.head.appendChild(script);
-    });
-  }
+              return script.src === src;
+            });
 
-  function findExistingSupabaseClient() {
-    try {
-      if (
-        typeof supabaseClient !== 'undefined' &&
-        supabaseClient?.auth?.getSession
-      ) {
-        return supabaseClient;
-      }
-    } catch {}
 
-    const possible = [
-      window.supabaseClient,
-      window.faizanSupabase,
-      window.supabaseDb,
-      window.sbClient
-    ];
+        if (existing) {
 
-    return possible.find(item => item?.auth?.getSession) || null;
-  }
+          let attempts = 0;
 
-  async function getClient() {
-    if (client?.auth?.getSession) return client;
 
-    const existing = findExistingSupabaseClient();
+          const timer =
+            setInterval(() => {
 
-    if (existing) {
-      client = existing;
-      window.faizanAuthClient = client;
-      return client;
-    }
+              attempts++;
 
-    if (!window.supabase?.createClient) {
-      await loadScript(SUPABASE_CDN);
-    }
 
-    if (!window.supabase?.createClient) {
-      throw new Error('Authentication could not be initialized.');
-    }
+              if (test?.()) {
 
-    client = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_PUBLISHABLE_KEY,
-      {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true
+                clearInterval(timer);
+
+                resolve();
+
+              } else if (attempts >= 60) {
+
+                clearInterval(timer);
+
+                reject(
+                  new Error(
+                    'Required script did not initialize.'
+                  )
+                );
+
+              }
+
+            }, 50);
+
+
+          return;
         }
+
+
+        const script =
+          document.createElement('script');
+
+
+        script.src = src;
+
+        script.async = true;
+
+
+        script.onload = () => {
+
+          let attempts = 0;
+
+
+          const timer =
+            setInterval(() => {
+
+              attempts++;
+
+
+              if (
+                !test ||
+                test()
+              ) {
+
+                clearInterval(timer);
+
+                resolve();
+
+              } else if (
+                attempts >= 60
+              ) {
+
+                clearInterval(timer);
+
+                reject(
+                  new Error(
+                    'Required script did not initialize.'
+                  )
+                );
+
+              }
+
+            }, 50);
+
+        };
+
+
+        script.onerror = () => {
+
+          reject(
+            new Error(
+              'Could not load required script.'
+            )
+          );
+
+        };
+
+
+        document.head.appendChild(script);
       }
     );
-
-    window.faizanAuthClient = client;
-
-    return client;
   }
 
-  /* -----------------------------
-     Profile API
-  ----------------------------- */
 
-  async function getAccessToken() {
-    const supabase = await getClient();
-    const { data, error } = await supabase.auth.getSession();
+  /* =========================================================
+     SUPABASE
+  ========================================================= */
 
-    if (error) throw error;
+  async function ensureSupabase() {
 
-    return data?.session?.access_token || '';
-  }
+    if (!window.supabase?.createClient) {
 
-  async function profileRequest(method = 'GET', body) {
-    const token = await getAccessToken();
+      await loadScript(
+        SUPABASE_CDN,
 
-    if (!token) {
-      throw new Error('Please log in first.');
+        () =>
+          !!window.supabase?.createClient,
+
+        script =>
+          script.src.includes(
+            '@supabase/supabase-js'
+          )
+      );
+
     }
 
-    const response = await fetch('/api/profile', {
-      method,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: body === undefined ? undefined : JSON.stringify(body)
-    });
 
-    const data = await response.json().catch(() => ({}));
+    if (
+      !window.SITE_AUTH ||
+      typeof window.getSupabase !==
+        'function'
+    ) {
 
-    if (!response.ok) {
-      const error = new Error(
-        data?.error ||
-        data?.message ||
-        `Profile request failed (${response.status})`
+      try {
+
+        await loadScript(
+          CONFIG_JS,
+
+          () =>
+            !!window.SITE_AUTH ||
+            typeof window.getSupabase ===
+              'function',
+
+          script =>
+            script.src.includes(
+              '/assets/js/supabase-config.js'
+            )
+        );
+
+      } catch (error) {
+
+        console.warn(
+          'Could not load supabase-config.js',
+          error
+        );
+
+      }
+
+    }
+
+
+    if (
+      typeof window.getSupabase ===
+      'function'
+    ) {
+
+      try {
+
+        const shared =
+          window.getSupabase();
+
+
+        if (
+          shared?.auth?.getSession
+        ) {
+
+          sb = shared;
+
+          return sb;
+        }
+
+      } catch {}
+    }
+
+
+    if (
+      window.faizanAuthClient
+        ?.auth?.getSession
+    ) {
+
+      sb =
+        window.faizanAuthClient;
+
+      return sb;
+    }
+
+
+    if (!sb) {
+
+      sb =
+        window.supabase.createClient(
+          SUPABASE_URL,
+          SUPABASE_PUBLISHABLE_KEY,
+          {
+
+            auth: {
+
+              persistSession: true,
+
+              autoRefreshToken: true,
+
+              detectSessionInUrl: true
+
+            }
+
+          }
+        );
+
+
+      window.faizanAuthClient = sb;
+    }
+
+
+    return sb;
+  }
+
+
+  /* =========================================================
+     TURNSTILE
+  ========================================================= */
+
+  function siteKey() {
+
+    return String(
+      window.SITE_AUTH
+        ?.turnstileSiteKey ||
+      ''
+    ).trim();
+  }
+
+
+  async function ensureTurnstile() {
+
+    await ensureSupabase();
+
+
+    if (!siteKey()) {
+
+      throw new Error(
+        'Turnstile site key was not found in supabase-config.js.'
       );
-      error.status = response.status;
+    }
+
+
+    if (
+      window.turnstile?.render
+    ) {
+
+      return window.turnstile;
+    }
+
+
+    await loadScript(
+      TURNSTILE_CDN,
+
+      () =>
+        !!window.turnstile?.render,
+
+      script =>
+        script.src.includes(
+          'challenges.cloudflare.com/turnstile'
+        )
+    );
+
+
+    return window.turnstile;
+  }
+
+
+  function captchaToken(type) {
+
+    return (
+      captcha[type]?.token ||
+      ''
+    );
+  }
+
+
+  function resetCaptcha(type) {
+
+    const state =
+      captcha[type];
+
+
+    if (!state) return;
+
+
+    state.token = '';
+
+
+    if (
+      state.widgetId !== null &&
+      window.turnstile?.reset
+    ) {
+
+      try {
+
+        window.turnstile.reset(
+          state.widgetId
+        );
+
+      } catch {}
+
+    }
+  }
+
+
+  async function renderCaptcha(type) {
+
+    const state =
+      captcha[type];
+
+
+    if (!state) return;
+
+
+    const container =
+      document.querySelector(
+        `[data-fy-captcha="${type}"]`
+      );
+
+
+    if (!container) return;
+
+
+    const turnstile =
+      await ensureTurnstile();
+
+
+    if (
+      state.widgetId !== null
+    ) {
+
+      return;
+    }
+
+
+    state.widgetId =
+      turnstile.render(
+        container,
+        {
+
+          sitekey:
+            siteKey(),
+
+          theme:
+            'light',
+
+          callback(token) {
+
+            state.token =
+              token || '';
+
+            clearMessage();
+
+          },
+
+          'expired-callback'() {
+
+            state.token = '';
+
+          },
+
+          'timeout-callback'() {
+
+            state.token = '';
+
+          },
+
+          'error-callback'() {
+
+            state.token = '';
+
+            showMessage(
+              'Security check could not load. Please refresh and try again.',
+              'error'
+            );
+
+          }
+
+        }
+      );
+  }
+
+
+  function scheduleCaptcha(type) {
+
+    if (
+      !captcha[type]
+    ) {
+      return;
+    }
+
+
+    requestAnimationFrame(() => {
+
+      renderCaptcha(type)
+        .catch(error => {
+
+          showMessage(
+            friendlyError(error),
+            'error'
+          );
+
+        });
+
+    });
+  }
+
+
+  /* =========================================================
+     PROFILE API
+  ========================================================= */
+
+  async function accessToken() {
+
+    const client =
+      await ensureSupabase();
+
+
+    const {
+      data,
+      error
+    } =
+      await client.auth.getSession();
+
+
+    if (error) {
       throw error;
     }
+
+
+    return (
+      data?.session
+        ?.access_token ||
+      ''
+    );
+  }
+
+
+  async function profileApi(
+    method = 'GET',
+    body
+  ) {
+
+    const token =
+      await accessToken();
+
+
+    if (!token) {
+
+      throw new Error(
+        'Please log in first.'
+      );
+
+    }
+
+
+    const response =
+      await fetch(
+        '/api/profile',
+        {
+
+          method,
+
+          headers: {
+
+            'Content-Type':
+              'application/json',
+
+            Accept:
+              'application/json',
+
+            Authorization:
+              `Bearer ${token}`
+
+          },
+
+          body:
+            body === undefined
+              ? undefined
+              : JSON.stringify(body)
+
+        }
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      const error =
+        new Error(
+          data.error ||
+          data.message ||
+          'Profile request failed.'
+        );
+
+
+      error.status =
+        response.status;
+
+
+      throw error;
+    }
+
 
     return data;
   }
 
-  async function tryCreateOwnProfile(user, displayName) {
-    const supabase = await getClient();
+
+  async function loadProfile() {
+
+    if (!currentUser) {
+
+      currentProfile = null;
+
+      return;
+    }
+
 
     try {
-      const payload = {
-        id: user.id,
-        display_name: cleanName(displayName) || emailPrefix(user.email)
-      };
 
-      const { error } = await supabase
-        .from('profiles')
-        .upsert(payload, { onConflict: 'id' });
+      const result =
+        await profileApi();
 
-      if (error) throw error;
 
-      return payload;
-    } catch (error) {
-      console.warn('Profile auto-create was not available:', error);
-      return null;
+      currentProfile =
+        result.profile || null;
+
+    } catch {
+
+      currentProfile = null;
+
     }
   }
 
-  async function loadProfile(user) {
-    if (!user) return null;
 
-    try {
-      const data = await profileRequest('GET');
-      return data?.profile || null;
-    } catch (error) {
-      if (error?.status === 403) {
-        const fallbackName = displayNameFor(user, null);
-        await tryCreateOwnProfile(user, fallbackName);
-
-        try {
-          const retry = await profileRequest('GET');
-          return retry?.profile || null;
-        } catch {}
-      }
-
-      return null;
-    }
-  }
-
-  /* -----------------------------
-     Global UI
-  ----------------------------- */
+  /* =========================================================
+     CREATE GLOBAL UI
+  ========================================================= */
 
   function ensureUi() {
-    if ($('#fy-auth-ui')) return;
 
-    const shell = document.createElement('div');
-    shell.id = 'fy-auth-ui';
+    if (
+      document.getElementById(
+        'fy-auth-ui'
+      )
+    ) {
+      return;
+    }
+
+
+    const shell =
+      document.createElement('div');
+
+
+    shell.id =
+      'fy-auth-ui';
+
 
     shell.innerHTML = `
-      <div class="fy-auth-modal" id="fy-auth-modal" hidden>
+
+      <div
+        class="fy-auth-modal"
+        id="fy-auth-modal"
+        hidden
+      >
+
         <button
           class="fy-auth-backdrop"
           type="button"
           data-auth-close
-          aria-label="Close account dialog"
+          aria-label="Close"
         ></button>
+
 
         <section
           class="fy-auth-dialog"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="fy-auth-dialog-title"
+          aria-labelledby="fy-auth-title"
         >
+
           <div class="fy-auth-dialog-head">
+
             <div>
-              <span class="fy-auth-kicker" id="fy-auth-kicker">ACCOUNT</span>
-              <h2 id="fy-auth-dialog-title">Welcome</h2>
+
+              <span
+                class="fy-auth-kicker"
+                id="fy-auth-kicker"
+              >
+                ACCOUNT
+              </span>
+
+              <h2 id="fy-auth-title">
+                Welcome back
+              </h2>
+
             </div>
 
+
             <button
-              class="fy-auth-x"
               type="button"
+              class="fy-auth-x"
               data-auth-close
               aria-label="Close"
-            >×</button>
+            >
+              ×
+            </button>
+
           </div>
 
-          <div class="fy-auth-tabs" id="fy-auth-tabs">
-            <button type="button" data-auth-tab="login" class="active">Login</button>
-            <button type="button" data-auth-tab="signup">Sign Up</button>
+
+          <div
+            class="fy-auth-tabs"
+            id="fy-auth-tabs"
+          >
+
+            <button
+              type="button"
+              class="active"
+              data-auth-tab="login"
+            >
+              Login
+            </button>
+
+            <button
+              type="button"
+              data-auth-tab="signup"
+            >
+              Sign Up
+            </button>
+
           </div>
 
-          <div class="fy-auth-message" id="fy-auth-message" hidden></div>
 
-          <form class="fy-auth-form" id="fy-login-form" data-auth-panel="login">
+          <div
+            class="fy-auth-message"
+            id="fy-auth-message"
+            hidden
+          ></div>
+
+
+          <!-- LOGIN -->
+
+          <form
+            class="fy-auth-form"
+            id="fy-login-form"
+            data-panel="login"
+          >
+
             <label>
+
               <span>Email</span>
+
               <input
                 name="email"
                 type="email"
@@ -382,50 +955,95 @@
                 required
                 placeholder="you@example.com"
               >
+
             </label>
 
+
             <label>
+
               <span>Password</span>
+
               <div class="fy-password-field">
+
                 <input
                   name="password"
                   type="password"
                   autocomplete="current-password"
-                  minlength="8"
                   required
+                  minlength="8"
                   placeholder="Your password"
                 >
-                <button type="button" data-toggle-password>Show</button>
+
+                <button
+                  type="button"
+                  data-password-toggle
+                >
+                  Show
+                </button>
+
               </div>
+
             </label>
 
-            <button class="fy-auth-submit" type="submit">Login</button>
+
+            <div class="fy-turnstile-wrap">
+
+              <div
+                data-fy-captcha="login"
+              ></div>
+
+            </div>
+
 
             <button
-              class="fy-auth-text-button"
+              class="fy-auth-submit"
+              type="submit"
+            >
+              Login
+            </button>
+
+
+            <button
               type="button"
-              data-auth-open-panel="reset"
+              class="fy-auth-text-button"
+              data-open-panel="reset"
             >
               Forgot password?
             </button>
+
           </form>
 
-          <form class="fy-auth-form" id="fy-signup-form" data-auth-panel="signup" hidden>
+
+          <!-- SIGNUP -->
+
+          <form
+            class="fy-auth-form"
+            id="fy-signup-form"
+            data-panel="signup"
+            hidden
+          >
+
             <label>
+
               <span>Name</span>
+
               <input
                 name="display_name"
                 type="text"
                 autocomplete="name"
+                required
                 minlength="2"
                 maxlength="50"
-                required
                 placeholder="Your name"
               >
+
             </label>
 
+
             <label>
+
               <span>Email</span>
+
               <input
                 name="email"
                 type="email"
@@ -433,11 +1051,247 @@
                 required
                 placeholder="you@example.com"
               >
+
             </label>
 
+
             <label>
+
               <span>Password</span>
+
               <div class="fy-password-field">
+
+                <input
+                  name="password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  minlength="8"
+                  placeholder="At least 8 characters"
+                >
+
+                <button
+                  type="button"
+                  data-password-toggle
+                >
+                  Show
+                </button>
+
+              </div>
+
+            </label>
+
+
+            <label>
+
+              <span>
+                Confirm password
+              </span>
+
+              <div class="fy-password-field">
+
+                <input
+                  name="confirm_password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  minlength="8"
+                  placeholder="Repeat password"
+                >
+
+                <button
+                  type="button"
+                  data-password-toggle
+                >
+                  Show
+                </button>
+
+              </div>
+
+            </label>
+
+
+            <div class="fy-turnstile-wrap">
+
+              <div
+                data-fy-captcha="signup"
+              ></div>
+
+            </div>
+
+
+            <button
+              class="fy-auth-submit"
+              type="submit"
+            >
+              Create Account
+            </button>
+
+          </form>
+
+
+          <!-- FORGOT PASSWORD -->
+
+          <form
+            class="fy-auth-form"
+            id="fy-reset-form"
+            data-panel="reset"
+            hidden
+          >
+
+            <p class="fy-auth-panel-copy">
+
+              Enter your email and
+              we'll send you a secure
+              password recovery link.
+
+            </p>
+
+
+            <label>
+
+              <span>Email</span>
+
+              <input
+                name="email"
+                type="email"
+                autocomplete="email"
+                required
+                placeholder="you@example.com"
+              >
+
+            </label>
+
+
+            <div class="fy-turnstile-wrap">
+
+              <div
+                data-fy-captcha="reset"
+              ></div>
+
+            </div>
+
+
+            <button
+              class="fy-auth-submit"
+              type="submit"
+            >
+              Send Recovery Link
+            </button>
+
+
+            <button
+              type="button"
+              class="fy-auth-text-button"
+              data-open-panel="login"
+            >
+              Back to login
+            </button>
+
+          </form>
+
+
+          <!-- EDIT NAME -->
+
+          <form
+            class="fy-auth-form"
+            id="fy-name-form"
+            data-panel="name"
+            hidden
+          >
+
+            <p class="fy-auth-panel-copy">
+
+              Change the name shown
+              on your account and
+              community profile.
+
+            </p>
+
+
+            <label>
+
+              <span>Name</span>
+
+              <input
+                name="display_name"
+                type="text"
+                autocomplete="name"
+                required
+                minlength="2"
+                maxlength="50"
+              >
+
+            </label>
+
+
+            <button
+              class="fy-auth-submit"
+              type="submit"
+            >
+              Save Name
+            </button>
+
+          </form>
+
+
+          <!-- EDIT EMAIL -->
+
+          <form
+            class="fy-auth-form"
+            id="fy-email-form"
+            data-panel="email"
+            hidden
+          >
+
+            <p class="fy-auth-panel-copy">
+
+              A confirmation email may
+              be sent before your new
+              email becomes active.
+
+            </p>
+
+
+            <label>
+
+              <span>New email</span>
+
+              <input
+                name="email"
+                type="email"
+                autocomplete="email"
+                required
+              >
+
+            </label>
+
+
+            <button
+              class="fy-auth-submit"
+              type="submit"
+            >
+              Change Email
+            </button>
+
+          </form>
+
+
+          <!-- PASSWORD -->
+
+          <form
+            class="fy-auth-form"
+            id="fy-password-form"
+            data-panel="password"
+            hidden
+          >
+
+            <label>
+
+              <span>New password</span>
+
+              <div class="fy-password-field">
+
                 <input
                   name="password"
                   type="password"
@@ -446,13 +1300,27 @@
                   required
                   placeholder="At least 8 characters"
                 >
-                <button type="button" data-toggle-password>Show</button>
+
+                <button
+                  type="button"
+                  data-password-toggle
+                >
+                  Show
+                </button>
+
               </div>
+
             </label>
 
+
             <label>
-              <span>Confirm password</span>
+
+              <span>
+                Confirm password
+              </span>
+
               <div class="fy-password-field">
+
                 <input
                   name="confirm_password"
                   type="password"
@@ -461,117 +1329,32 @@
                   required
                   placeholder="Repeat password"
                 >
-                <button type="button" data-toggle-password>Show</button>
+
+                <button
+                  type="button"
+                  data-password-toggle
+                >
+                  Show
+                </button>
+
               </div>
+
             </label>
 
-            <button class="fy-auth-submit" type="submit">Create Account</button>
-
-            <p class="fy-auth-fine">
-              You may be asked to confirm your email before your first login.
-            </p>
-          </form>
-
-          <form class="fy-auth-form" id="fy-reset-form" data-auth-panel="reset" hidden>
-            <p class="fy-auth-panel-copy">
-              Enter your account email and I’ll send a secure password recovery link.
-            </p>
-
-            <label>
-              <span>Email</span>
-              <input
-                name="email"
-                type="email"
-                autocomplete="email"
-                required
-                placeholder="you@example.com"
-              >
-            </label>
-
-            <button class="fy-auth-submit" type="submit">Send Recovery Link</button>
 
             <button
-              class="fy-auth-text-button"
-              type="button"
-              data-auth-open-panel="login"
+              class="fy-auth-submit"
+              type="submit"
             >
-              Back to login
+              Update Password
             </button>
+
           </form>
 
-          <form class="fy-auth-form" id="fy-name-form" data-auth-panel="name" hidden>
-            <p class="fy-auth-panel-copy">
-              This name is used for your account and community profile.
-            </p>
-
-            <label>
-              <span>Name</span>
-              <input
-                name="display_name"
-                type="text"
-                autocomplete="name"
-                minlength="2"
-                maxlength="50"
-                required
-              >
-            </label>
-
-            <button class="fy-auth-submit" type="submit">Save Name</button>
-          </form>
-
-          <form class="fy-auth-form" id="fy-email-form" data-auth-panel="email" hidden>
-            <p class="fy-auth-panel-copy">
-              Supabase may require confirmation from your current or new email address.
-            </p>
-
-            <label>
-              <span>New email</span>
-              <input
-                name="email"
-                type="email"
-                autocomplete="email"
-                required
-              >
-            </label>
-
-            <button class="fy-auth-submit" type="submit">Change Email</button>
-          </form>
-
-          <form class="fy-auth-form" id="fy-password-form" data-auth-panel="password" hidden>
-            <label>
-              <span>New password</span>
-              <div class="fy-password-field">
-                <input
-                  name="password"
-                  type="password"
-                  autocomplete="new-password"
-                  minlength="8"
-                  required
-                  placeholder="At least 8 characters"
-                >
-                <button type="button" data-toggle-password>Show</button>
-              </div>
-            </label>
-
-            <label>
-              <span>Confirm new password</span>
-              <div class="fy-password-field">
-                <input
-                  name="confirm_password"
-                  type="password"
-                  autocomplete="new-password"
-                  minlength="8"
-                  required
-                  placeholder="Repeat new password"
-                >
-                <button type="button" data-toggle-password>Show</button>
-              </div>
-            </label>
-
-            <button class="fy-auth-submit" type="submit">Update Password</button>
-          </form>
         </section>
+
       </div>
+
 
       <div
         class="fy-auth-toast"
@@ -582,782 +1365,2107 @@
       ></div>
     `;
 
-    document.body.appendChild(shell);
 
-    bindModalEvents();
+    document.body.appendChild(
+      shell
+    );
   }
 
-  function findHeaderNav() {
-    return $('.topbar .nav') || $('header .nav') || $('.nav');
+
+  /* =========================================================
+     HEADER
+  ========================================================= */
+
+  function headerNav() {
+
+    return (
+      document.querySelector(
+        '.topbar .nav'
+      ) ||
+
+      document.querySelector(
+        'header .nav'
+      ) ||
+
+      document.querySelector(
+        '.nav'
+      )
+    );
   }
 
-  function ensureNavRoot() {
-    let root = $('#fy-auth-nav');
 
-    if (root) return root;
+  function ensureHeaderAuth() {
 
-    const nav = findHeaderNav();
-    if (!nav) return null;
+    let root =
+      document.getElementById(
+        'fy-auth-nav'
+      );
 
-    root = document.createElement('div');
-    root.id = 'fy-auth-nav';
-    root.className = 'fy-auth-nav';
-    root.setAttribute('aria-label', 'Account');
 
-    const menu = $('.menu', nav);
+    if (root) {
 
-    if (menu) {
-      nav.insertBefore(root, menu);
-    } else {
-      nav.appendChild(root);
+      return root;
     }
+
+
+    const nav =
+      headerNav();
+
+
+    if (!nav) {
+
+      return null;
+    }
+
+
+    root =
+      document.createElement(
+        'div'
+      );
+
+
+    root.id =
+      'fy-auth-nav';
+
+
+    root.className =
+      'fy-auth-nav';
+
+
+    const mobileMenu =
+      nav.querySelector('.menu');
+
+
+    if (mobileMenu) {
+
+      nav.insertBefore(
+        root,
+        mobileMenu
+      );
+
+    } else {
+
+      nav.appendChild(root);
+
+    }
+
 
     return root;
   }
 
-  function renderNav() {
-    const root = ensureNavRoot();
+
+  function renderHeader() {
+
+    const root =
+      ensureHeaderAuth();
+
+
     if (!root) return;
 
+
     if (!currentUser) {
+
       root.innerHTML = `
-        <button class="fy-auth-login" type="button" data-open-auth="login">
+
+        <button
+          type="button"
+          class="fy-auth-login"
+          data-open-auth="login"
+        >
           Login
         </button>
-        <button class="fy-auth-signup" type="button" data-open-auth="signup">
+
+        <button
+          type="button"
+          class="fy-auth-signup"
+          data-open-auth="signup"
+        >
           Sign Up
         </button>
       `;
 
+
       return;
     }
 
-    const name = displayNameFor(currentUser, currentProfile);
-    const email = currentUser.email || currentProfile?.email || '';
-    const initials = initialsFor(name);
-    const isAdmin = currentProfile?.role === 'admin';
+
+    const name =
+      userName();
+
+
+    const email =
+      currentUser.email || '';
+
+
+    const avatar =
+      initials(name);
+
+
+    const admin =
+      currentProfile?.role ===
+      'admin';
+
 
     root.innerHTML = `
+
       <div class="fy-account">
+
         <button
-          class="fy-account-trigger"
           type="button"
+          class="fy-account-trigger"
           aria-expanded="false"
-          aria-controls="fy-account-menu"
         >
-          <span class="fy-account-avatar">${escapeHtml(initials)}</span>
-          <span class="fy-account-trigger-text">Account</span>
-          <span class="fy-account-chevron" aria-hidden="true">⌄</span>
+
+          <span class="fy-account-avatar">
+
+            ${escapeHtml(avatar)}
+
+          </span>
+
+          <span
+            class="fy-account-trigger-text"
+          >
+            Account
+          </span>
+
+          <span
+            class="fy-account-chevron"
+          >
+            ⌄
+          </span>
+
         </button>
 
-        <div class="fy-account-menu" id="fy-account-menu" hidden>
+
+        <div
+          class="fy-account-menu"
+          id="fy-account-menu"
+          hidden
+        >
+
           <div class="fy-account-summary">
-            <span class="fy-account-avatar large">${escapeHtml(initials)}</span>
+
+            <span
+              class="fy-account-avatar large"
+            >
+              ${escapeHtml(avatar)}
+            </span>
+
+
             <div>
-              <strong>${escapeHtml(name)}</strong>
-              <small>${escapeHtml(email)}</small>
+
+              <strong>
+
+                ${escapeHtml(name)}
+
+              </strong>
+
+              <small>
+
+                ${escapeHtml(email)}
+
+              </small>
+
             </div>
+
           </div>
 
-          <div class="fy-account-divider"></div>
 
-          <button type="button" data-account-action="name">
+          <div
+            class="fy-account-divider"
+          ></div>
+
+
+          <button
+            type="button"
+            data-account="name"
+          >
+
             <span>Edit name</span>
+
             <b>↗</b>
+
           </button>
 
-          <button type="button" data-account-action="email">
+
+          <button
+            type="button"
+            data-account="email"
+          >
+
             <span>Change email</span>
+
             <b>↗</b>
+
           </button>
 
-          <button type="button" data-account-action="password">
-            <span>Change password</span>
+
+          <button
+            type="button"
+            data-account="password"
+          >
+
+            <span>
+              Change password
+            </span>
+
             <b>↗</b>
+
           </button>
 
-          ${isAdmin ? `
-            <a class="fy-account-admin" href="/admin/">
-              <span>Admin dashboard</span>
-              <b>↗</b>
-            </a>
-          ` : ''}
 
-          <div class="fy-account-divider"></div>
+          ${
+            admin
+              ? `
 
-          <button class="fy-account-logout" type="button" data-account-action="logout">
+                <a
+                  class="fy-account-admin"
+                  href="/admin/"
+                >
+
+                  <span>
+                    Admin dashboard
+                  </span>
+
+                  <b>↗</b>
+
+                </a>
+
+              `
+              : ''
+          }
+
+
+          <div
+            class="fy-account-divider"
+          ></div>
+
+
+          <button
+            type="button"
+            class="fy-account-logout"
+            data-account="logout"
+          >
+
             <span>Logout</span>
+
             <b>→</b>
+
           </button>
+
         </div>
+
       </div>
     `;
   }
 
-  /* -----------------------------
-     Modal
-  ----------------------------- */
 
-  const panelMeta = {
+  /* =========================================================
+     MODAL
+  ========================================================= */
+
+  const panelInfo = {
+
     login: {
       kicker: 'ACCOUNT',
       title: 'Welcome back',
-      showTabs: true
+      tabs: true
     },
+
     signup: {
       kicker: 'CREATE ACCOUNT',
       title: 'Join the site',
-      showTabs: true
+      tabs: true
     },
+
     reset: {
       kicker: 'RECOVERY',
       title: 'Reset password',
-      showTabs: false
+      tabs: false
     },
+
     name: {
       kicker: 'ACCOUNT SETTINGS',
       title: 'Change your name',
-      showTabs: false
+      tabs: false
     },
+
     email: {
       kicker: 'ACCOUNT SETTINGS',
       title: 'Change your email',
-      showTabs: false
+      tabs: false
     },
+
     password: {
       kicker: 'ACCOUNT SETTINGS',
       title: 'Change password',
-      showTabs: false
+      tabs: false
     }
+
   };
 
-  function showMessage(message = '', type = 'info') {
-    const box = $('#fy-auth-message');
+
+  function showMessage(
+    message,
+    type = 'info'
+  ) {
+
+    const box =
+      document.getElementById(
+        'fy-auth-message'
+      );
+
+
     if (!box) return;
 
+
     if (!message) {
+
       box.hidden = true;
+
       box.textContent = '';
-      box.removeAttribute('data-type');
+
+      box.removeAttribute(
+        'data-type'
+      );
+
       return;
     }
 
-    box.textContent = message;
-    box.dataset.type = type;
+
+    box.textContent =
+      message;
+
+
+    box.dataset.type =
+      type;
+
+
     box.hidden = false;
   }
 
-  function showPanel(panelName) {
-    const modal = $('#fy-auth-modal');
-    if (!modal) return;
 
-    const meta = panelMeta[panelName] || panelMeta.login;
+  function clearMessage() {
 
-    $$('.fy-auth-form', modal).forEach(panel => {
-      panel.hidden = panel.dataset.authPanel !== panelName;
-    });
-
-    const tabs = $('#fy-auth-tabs', modal);
-    if (tabs) tabs.hidden = !meta.showTabs;
-
-    $$('[data-auth-tab]', modal).forEach(button => {
-      button.classList.toggle(
-        'active',
-        button.dataset.authTab === panelName
-      );
-    });
-
-    const kicker = $('#fy-auth-kicker', modal);
-    const title = $('#fy-auth-dialog-title', modal);
-
-    if (kicker) kicker.textContent = meta.kicker;
-    if (title) title.textContent = meta.title;
-
-    if (panelName === 'name') {
-      const input = $('#fy-name-form input[name="display_name"]');
-      if (input) input.value = displayNameFor(currentUser, currentProfile);
-    }
-
-    if (panelName === 'email') {
-      const input = $('#fy-email-form input[name="email"]');
-      if (input) input.value = currentUser?.email || '';
-    }
-
-    showMessage();
+    showMessage('');
   }
 
-  function openModal(panel = 'login') {
+
+  function showPanel(name) {
+
+    const modal =
+      document.getElementById(
+        'fy-auth-modal'
+      );
+
+
+    if (!modal) return;
+
+
+    const info =
+      panelInfo[name] ||
+      panelInfo.login;
+
+
+    $$('[data-panel]', modal)
+      .forEach(panel => {
+
+        panel.hidden =
+          panel.dataset.panel !==
+          name;
+
+      });
+
+
+    const tabs =
+      document.getElementById(
+        'fy-auth-tabs'
+      );
+
+
+    if (tabs) {
+
+      tabs.hidden =
+        !info.tabs;
+    }
+
+
+    $$('[data-auth-tab]', modal)
+      .forEach(button => {
+
+        button.classList.toggle(
+          'active',
+          button.dataset.authTab ===
+            name
+        );
+
+      });
+
+
+    const kicker =
+      document.getElementById(
+        'fy-auth-kicker'
+      );
+
+
+    const title =
+      document.getElementById(
+        'fy-auth-title'
+      );
+
+
+    if (kicker) {
+
+      kicker.textContent =
+        info.kicker;
+    }
+
+
+    if (title) {
+
+      title.textContent =
+        info.title;
+    }
+
+
+    if (name === 'name') {
+
+      const input =
+        document.querySelector(
+          '#fy-name-form [name="display_name"]'
+        );
+
+
+      if (input) {
+
+        input.value =
+          userName();
+      }
+
+    }
+
+
+    if (name === 'email') {
+
+      const input =
+        document.querySelector(
+          '#fy-email-form [name="email"]'
+        );
+
+
+      if (input) {
+
+        input.value =
+          currentUser?.email ||
+          '';
+      }
+
+    }
+
+
+    clearMessage();
+
+
+    if (
+      !modal.hidden &&
+      captcha[name]
+    ) {
+
+      scheduleCaptcha(name);
+    }
+  }
+
+
+  function openModal(
+    name = 'login'
+  ) {
+
     ensureUi();
 
-    const modal = $('#fy-auth-modal');
+
+    const modal =
+      document.getElementById(
+        'fy-auth-modal'
+      );
+
+
     if (!modal) return;
 
-    showPanel(panel);
+
+    showPanel(name);
+
 
     modal.hidden = false;
-    document.body.classList.add('fy-auth-modal-open');
+
+
+    document.body.classList.add(
+      'fy-auth-modal-open'
+    );
+
 
     requestAnimationFrame(() => {
-      modal.classList.add('open');
 
-      const input = $(`[data-auth-panel="${panel}"] input`, modal);
-      input?.focus({ preventScroll: true });
+      modal.classList.add(
+        'open'
+      );
+
+
+      scheduleCaptcha(name);
+
+
+      const input =
+        modal.querySelector(
+          `[data-panel="${name}"] input`
+        );
+
+
+      input?.focus({
+        preventScroll: true
+      });
+
     });
   }
 
+
   function closeModal() {
-    const modal = $('#fy-auth-modal');
-    if (!modal || modal.hidden) return;
 
-    modal.classList.remove('open');
-    document.body.classList.remove('fy-auth-modal-open');
+    const modal =
+      document.getElementById(
+        'fy-auth-modal'
+      );
 
-    window.setTimeout(() => {
+
+    if (
+      !modal ||
+      modal.hidden
+    ) {
+      return;
+    }
+
+
+    modal.classList.remove(
+      'open'
+    );
+
+
+    document.body.classList.remove(
+      'fy-auth-modal-open'
+    );
+
+
+    setTimeout(() => {
+
       modal.hidden = true;
-      showMessage();
+
+      clearMessage();
+
     }, 160);
   }
 
-  function toggleAccountMenu(force) {
-    const menu = $('#fy-account-menu');
-    const trigger = $('.fy-account-trigger');
 
-    if (!menu || !trigger) return;
+  /* =========================================================
+     ACCOUNT DROPDOWN
+  ========================================================= */
 
-    const shouldOpen =
+  function toggleAccount(
+    force
+  ) {
+
+    const menu =
+      document.getElementById(
+        'fy-account-menu'
+      );
+
+
+    const trigger =
+      document.querySelector(
+        '.fy-account-trigger'
+      );
+
+
+    if (
+      !menu ||
+      !trigger
+    ) {
+      return;
+    }
+
+
+    const open =
       typeof force === 'boolean'
         ? force
         : menu.hidden;
 
-    menu.hidden = !shouldOpen;
-    trigger.setAttribute('aria-expanded', String(shouldOpen));
-  }
 
-  function toast(message, type = 'success') {
-    const box = $('#fy-auth-toast');
-    if (!box) return;
+    menu.hidden =
+      !open;
 
-    box.textContent = message;
-    box.dataset.type = type;
-    box.hidden = false;
 
-    clearTimeout(toast.timer);
-
-    toast.timer = window.setTimeout(() => {
-      box.classList.remove('show');
-
-      window.setTimeout(() => {
-        box.hidden = true;
-      }, 170);
-    }, 3800);
-
-    requestAnimationFrame(() => box.classList.add('show'));
-  }
-
-  /* -----------------------------
-     Auth actions
-  ----------------------------- */
-
-  async function refreshUser(sessionOverride) {
-    const supabase = await getClient();
-
-    let user = sessionOverride?.user || null;
-
-    if (!user) {
-      const { data, error } = await supabase.auth.getUser();
-
-      if (!error) user = data?.user || null;
-    }
-
-    currentUser = user;
-    currentProfile = user ? await loadProfile(user) : null;
-
-    renderNav();
-
-    window.dispatchEvent(
-      new CustomEvent('faizan-auth-changed', {
-        detail: {
-          user: currentUser,
-          profile: currentProfile
-        }
-      })
+    trigger.setAttribute(
+      'aria-expanded',
+      String(open)
     );
   }
 
-  async function handleLogin(form) {
-    const submit = $('button[type="submit"]', form);
-    const formData = new FormData(form);
 
-    const email = String(formData.get('email') || '').trim().toLowerCase();
-    const password = String(formData.get('password') || '');
+  /* =========================================================
+     TOAST
+  ========================================================= */
 
-    setButtonBusy(submit, true, 'Logging in…');
-    showMessage();
+  function toast(
+    message,
+    type = 'success'
+  ) {
 
-    try {
-      const supabase = await getClient();
+    const box =
+      document.getElementById(
+        'fy-auth-toast'
+      );
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
 
-      if (error) throw error;
+    if (!box) return;
 
-      await refreshUser(data?.session);
 
-      form.reset();
-      closeModal();
-      toast('Logged in successfully.');
-    } catch (error) {
-      showMessage(friendlyError(error), 'error');
-    } finally {
-      setButtonBusy(submit, false);
-    }
-  }
+    box.textContent =
+      message;
 
-  async function handleSignup(form) {
-    const submit = $('button[type="submit"]', form);
-    const formData = new FormData(form);
 
-    const displayName = cleanName(formData.get('display_name'));
-    const email = String(formData.get('email') || '').trim().toLowerCase();
-    const password = String(formData.get('password') || '');
-    const confirmPassword = String(formData.get('confirm_password') || '');
+    box.dataset.type =
+      type;
 
-    if (displayName.length < 2) {
-      showMessage('Please enter your name.', 'error');
-      return;
-    }
 
-    if (password.length < 8) {
-      showMessage('Password must be at least 8 characters.', 'error');
-      return;
-    }
+    box.hidden = false;
 
-    if (password !== confirmPassword) {
-      showMessage('Passwords do not match.', 'error');
-      return;
-    }
 
-    setButtonBusy(submit, true, 'Creating account…');
-    showMessage();
+    requestAnimationFrame(() => {
 
-    try {
-      const supabase = await getClient();
+      box.classList.add(
+        'show'
+      );
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            display_name: displayName
-          },
-          emailRedirectTo: `${window.location.origin}/`
-        }
-      });
+    });
 
-      if (error) throw error;
 
-      if (data?.session && data?.user) {
-        await tryCreateOwnProfile(data.user, displayName);
-        await refreshUser(data.session);
+    clearTimeout(
+      toast.timer
+    );
 
-        form.reset();
-        closeModal();
-        toast('Account created. You are now logged in.');
-      } else {
-        form.reset();
-        showPanel('login');
-        showMessage(
-          'Account created. Check your email to confirm it, then log in.',
-          'success'
+
+    toast.timer =
+      setTimeout(() => {
+
+        box.classList.remove(
+          'show'
         );
-      }
-    } catch (error) {
-      showMessage(friendlyError(error), 'error');
-    } finally {
-      setButtonBusy(submit, false);
-    }
+
+
+        setTimeout(() => {
+
+          box.hidden = true;
+
+        }, 180);
+
+      }, 3600);
   }
 
-  async function handleReset(form) {
-    const submit = $('button[type="submit"]', form);
-    const formData = new FormData(form);
-    const email = String(formData.get('email') || '').trim().toLowerCase();
 
-    setButtonBusy(submit, true, 'Sending…');
-    showMessage();
+  /* =========================================================
+     REFRESH SESSION
+  ========================================================= */
 
-    try {
-      const supabase = await getClient();
+  async function refreshSession(
+    session = null
+  ) {
 
-      const { error } = await supabase.auth.resetPasswordForEmail(
-        email,
-        {
-          redirectTo: `${window.location.origin}/`
-        }
+    const client =
+      await ensureSupabase();
+
+
+    if (
+      session?.user
+    ) {
+
+      currentUser =
+        session.user;
+
+    } else {
+
+      const {
+        data
+      } =
+        await client.auth.getUser();
+
+
+      currentUser =
+        data?.user || null;
+    }
+
+
+    if (currentUser) {
+
+      await loadProfile();
+
+    } else {
+
+      currentProfile = null;
+    }
+
+
+    renderHeader();
+  }
+
+
+  /* =========================================================
+     LOGIN
+  ========================================================= */
+
+  async function login(form) {
+
+    clearMessage();
+
+
+    const button =
+      form.querySelector(
+        'button[type="submit"]'
       );
 
-      if (error) throw error;
 
-      form.reset();
+    const email =
+      form.email.value
+        .trim()
+        .toLowerCase();
+
+
+    const password =
+      form.password.value;
+
+
+    const captchaToken =
+      captchaTokenForLogin();
+
+
+    if (!captchaToken) {
+
       showMessage(
-        'Recovery email sent. Open the link in your inbox to continue.',
-        'success'
+        'Please complete the security check.',
+        'error'
       );
-    } catch (error) {
-      showMessage(friendlyError(error), 'error');
-    } finally {
-      setButtonBusy(submit, false);
-    }
-  }
 
-  async function handleNameChange(form) {
-    if (!currentUser) return;
 
-    const submit = $('button[type="submit"]', form);
-    const formData = new FormData(form);
-    const displayName = cleanName(formData.get('display_name'));
+      scheduleCaptcha(
+        'login'
+      );
 
-    if (displayName.length < 2) {
-      showMessage('Name must be at least 2 characters.', 'error');
+
       return;
     }
 
-    setButtonBusy(submit, true, 'Saving…');
-    showMessage();
+
+    busy(
+      button,
+      true,
+      'Logging in…'
+    );
+
 
     try {
-      const supabase = await getClient();
 
-      const { error: metadataError } = await supabase.auth.updateUser({
-        data: {
-          ...currentUser.user_metadata,
-          display_name: displayName
-        }
-      });
+      const client =
+        await ensureSupabase();
 
-      if (metadataError) throw metadataError;
 
-      try {
-        const data = await profileRequest('PATCH', {
-          display_name: displayName
-        });
+      const {
+        data,
+        error
+      } =
+        await client.auth
+          .signInWithPassword({
 
-        currentProfile = data?.profile || currentProfile;
-      } catch (profileError) {
-        await tryCreateOwnProfile(currentUser, displayName);
+            email,
 
-        try {
-          const retry = await profileRequest('PATCH', {
-            display_name: displayName
+            password,
+
+            options: {
+
+              captchaToken
+
+            }
+
           });
 
-          currentProfile = retry?.profile || currentProfile;
-        } catch {
-          currentProfile = {
-            ...(currentProfile || {}),
-            display_name: displayName
-          };
-        }
+
+      if (error) {
+
+        throw error;
       }
 
-      const { data: userData } = await supabase.auth.getUser();
-      currentUser = userData?.user || currentUser;
 
-      renderNav();
-      closeModal();
-      toast('Name updated.');
-    } catch (error) {
-      showMessage(friendlyError(error), 'error');
-    } finally {
-      setButtonBusy(submit, false);
-    }
-  }
-
-  async function handleEmailChange(form) {
-    if (!currentUser) return;
-
-    const submit = $('button[type="submit"]', form);
-    const formData = new FormData(form);
-    const email = String(formData.get('email') || '').trim().toLowerCase();
-
-    if (!email) {
-      showMessage('Enter a valid email address.', 'error');
-      return;
-    }
-
-    if (email === String(currentUser.email || '').toLowerCase()) {
-      showMessage('This is already your current email.', 'error');
-      return;
-    }
-
-    setButtonBusy(submit, true, 'Updating…');
-    showMessage();
-
-    try {
-      const supabase = await getClient();
-
-      const { error } = await supabase.auth.updateUser({
-        email
-      });
-
-      if (error) throw error;
-
-      closeModal();
-      toast(
-        'Email change requested. Check your inbox for any confirmation email.'
+      await refreshSession(
+        data.session
       );
-    } catch (error) {
-      showMessage(friendlyError(error), 'error');
-    } finally {
-      setButtonBusy(submit, false);
-    }
-  }
 
-  async function handlePasswordChange(form) {
-    if (!currentUser) return;
-
-    const submit = $('button[type="submit"]', form);
-    const formData = new FormData(form);
-
-    const password = String(formData.get('password') || '');
-    const confirmPassword = String(formData.get('confirm_password') || '');
-
-    if (password.length < 8) {
-      showMessage('Password must be at least 8 characters.', 'error');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      showMessage('Passwords do not match.', 'error');
-      return;
-    }
-
-    setButtonBusy(submit, true, 'Updating…');
-    showMessage();
-
-    try {
-      const supabase = await getClient();
-
-      const { error } = await supabase.auth.updateUser({
-        password
-      });
-
-      if (error) throw error;
 
       form.reset();
+
+
       closeModal();
-      toast('Password updated successfully.');
+
+
+      toast(
+        'Logged in successfully.'
+      );
+
+
     } catch (error) {
-      showMessage(friendlyError(error), 'error');
+
+      showMessage(
+        friendlyError(error),
+        'error'
+      );
+
+
     } finally {
-      setButtonBusy(submit, false);
+
+      resetCaptcha(
+        'login'
+      );
+
+
+      busy(
+        button,
+        false
+      );
     }
   }
 
-  async function logout() {
-    toggleAccountMenu(false);
+
+  function captchaTokenForLogin() {
+
+    return captchaToken(
+      'login'
+    );
+  }
+
+
+  /* =========================================================
+     SIGNUP
+  ========================================================= */
+
+  async function signup(form) {
+
+    clearMessage();
+
+
+    const button =
+      form.querySelector(
+        'button[type="submit"]'
+      );
+
+
+    const displayName =
+      cleanName(
+        form.display_name.value
+      );
+
+
+    const email =
+      form.email.value
+        .trim()
+        .toLowerCase();
+
+
+    const password =
+      form.password.value;
+
+
+    const confirmPassword =
+      form.confirm_password.value;
+
+
+    const token =
+      captchaToken(
+        'signup'
+      );
+
+
+    if (
+      displayName.length < 2
+    ) {
+
+      showMessage(
+        'Please enter your name.',
+        'error'
+      );
+
+      return;
+    }
+
+
+    if (
+      password.length < 8
+    ) {
+
+      showMessage(
+        'Password must be at least 8 characters.',
+        'error'
+      );
+
+      return;
+    }
+
+
+    if (
+      password !==
+      confirmPassword
+    ) {
+
+      showMessage(
+        'Passwords do not match.',
+        'error'
+      );
+
+      return;
+    }
+
+
+    if (!token) {
+
+      showMessage(
+        'Please complete the security check.',
+        'error'
+      );
+
+
+      scheduleCaptcha(
+        'signup'
+      );
+
+
+      return;
+    }
+
+
+    busy(
+      button,
+      true,
+      'Creating account…'
+    );
+
 
     try {
-      const supabase = await getClient();
-      const { error } = await supabase.auth.signOut();
 
-      if (error) throw error;
+      const client =
+        await ensureSupabase();
 
-      currentUser = null;
-      currentProfile = null;
 
-      renderNav();
-      toast('You are logged out.');
-    } catch (error) {
-      toast(friendlyError(error), 'error');
-    }
-  }
+      const {
+        data,
+        error
+      } =
+        await client.auth.signUp({
 
-  /* -----------------------------
-     Event binding
-  ----------------------------- */
+          email,
 
-  function bindModalEvents() {
-    const ui = $('#fy-auth-ui');
-    if (!ui || ui.dataset.bound === 'true') return;
+          password,
 
-    ui.dataset.bound = 'true';
+          options: {
 
-    ui.addEventListener('click', event => {
-      const close = event.target.closest('[data-auth-close]');
-      if (close) {
-        closeModal();
-        return;
+            data: {
+
+              display_name:
+                displayName
+
+            },
+
+            emailRedirectTo:
+              `${location.origin}/login/?verified=1`,
+
+            captchaToken:
+              token
+
+          }
+
+        });
+
+
+      if (error) {
+
+        throw error;
       }
 
-      const tab = event.target.closest('[data-auth-tab]');
-      if (tab) {
-        showPanel(tab.dataset.authTab);
-        return;
-      }
 
-      const opener = event.target.closest('[data-auth-open-panel]');
-      if (opener) {
-        showPanel(opener.dataset.authOpenPanel);
-        return;
-      }
+      form.reset();
 
-      const toggle = event.target.closest('[data-toggle-password]');
-      if (toggle) {
-        const wrap = toggle.closest('.fy-password-field');
-        const input = $('input', wrap);
-
-        if (!input) return;
-
-        const showing = input.type === 'text';
-        input.type = showing ? 'password' : 'text';
-        toggle.textContent = showing ? 'Show' : 'Hide';
-      }
-    });
-
-    $('#fy-login-form')?.addEventListener('submit', event => {
-      event.preventDefault();
-      handleLogin(event.currentTarget);
-    });
-
-    $('#fy-signup-form')?.addEventListener('submit', event => {
-      event.preventDefault();
-      handleSignup(event.currentTarget);
-    });
-
-    $('#fy-reset-form')?.addEventListener('submit', event => {
-      event.preventDefault();
-      handleReset(event.currentTarget);
-    });
-
-    $('#fy-name-form')?.addEventListener('submit', event => {
-      event.preventDefault();
-      handleNameChange(event.currentTarget);
-    });
-
-    $('#fy-email-form')?.addEventListener('submit', event => {
-      event.preventDefault();
-      handleEmailChange(event.currentTarget);
-    });
-
-    $('#fy-password-form')?.addEventListener('submit', event => {
-      event.preventDefault();
-      handlePasswordChange(event.currentTarget);
-    });
-  }
-
-  function bindDocumentEvents() {
-    if (document.documentElement.dataset.faizanAuthEvents === 'true') return;
-
-    document.documentElement.dataset.faizanAuthEvents = 'true';
-
-    document.addEventListener('click', event => {
-      const authOpen = event.target.closest('[data-open-auth]');
-      if (authOpen) {
-        openModal(authOpen.dataset.openAuth || 'login');
-        return;
-      }
-
-      const trigger = event.target.closest('.fy-account-trigger');
-      if (trigger) {
-        event.stopPropagation();
-        toggleAccountMenu();
-        return;
-      }
-
-      const action = event.target.closest('[data-account-action]');
-      if (action) {
-        event.stopPropagation();
-
-        const type = action.dataset.accountAction;
-        toggleAccountMenu(false);
-
-        if (type === 'logout') {
-          logout();
-        } else if (['name', 'email', 'password'].includes(type)) {
-          openModal(type);
-        }
-
-        return;
-      }
 
       if (
-        !event.target.closest('.fy-account') &&
-        !event.target.closest('.fy-account-menu')
+        data.session &&
+        data.user
       ) {
-        toggleAccountMenu(false);
-      }
-    });
 
-    document.addEventListener('keydown', event => {
-      if (event.key !== 'Escape') return;
+        await refreshSession(
+          data.session
+        );
 
-      const modal = $('#fy-auth-modal');
 
-      if (modal && !modal.hidden) {
         closeModal();
+
+
+        toast(
+          'Account created. You are signed in.'
+        );
+
       } else {
-        toggleAccountMenu(false);
+
+        showPanel(
+          'login'
+        );
+
+
+        showMessage(
+          'Account created. Please verify your email before signing in.',
+          'success'
+        );
+
       }
-    });
-  }
 
-  /* -----------------------------
-     Init
-  ----------------------------- */
 
-  async function init() {
-    loadCssOnce();
-    ensureUi();
-    ensureNavRoot();
-    bindDocumentEvents();
-
-    renderNav();
-
-    try {
-      const supabase = await getClient();
-
-      const { data } = await supabase.auth.getSession();
-
-      await refreshUser(data?.session || null);
-
-      const result = supabase.auth.onAuthStateChange(
-        (event, session) => {
-          // Supabase recommends keeping callback work light.
-          window.setTimeout(() => {
-            refreshUser(session).catch(console.error);
-
-            if (event === 'PASSWORD_RECOVERY') {
-              openModal('password');
-            }
-          }, 0);
-        }
-      );
-
-      authSubscription =
-        result?.data?.subscription ||
-        result?.subscription ||
-        null;
-
-      window.addEventListener(
-        'pagehide',
-        () => {
-          authSubscription?.unsubscribe?.();
-        },
-        { once: true }
-      );
     } catch (error) {
-      console.error('Global auth UI failed to initialize:', error);
-      renderNav();
+
+      showMessage(
+        friendlyError(error),
+        'error'
+      );
+
+
+    } finally {
+
+      resetCaptcha(
+        'signup'
+      );
+
+
+      busy(
+        button,
+        false
+      );
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init, { once: true });
-  } else {
-    init();
+
+  /* =========================================================
+     FORGOT PASSWORD
+  ========================================================= */
+
+  async function forgotPassword(
+    form
+  ) {
+
+    clearMessage();
+
+
+    const button =
+      form.querySelector(
+        'button[type="submit"]'
+      );
+
+
+    const email =
+      form.email.value
+        .trim()
+        .toLowerCase();
+
+
+    const token =
+      captchaToken(
+        'reset'
+      );
+
+
+    if (!email) {
+
+      showMessage(
+        'Enter your email first.',
+        'error'
+      );
+
+      return;
+    }
+
+
+    if (!token) {
+
+      showMessage(
+        'Please complete the security check.',
+        'error'
+      );
+
+
+      scheduleCaptcha(
+        'reset'
+      );
+
+
+      return;
+    }
+
+
+    busy(
+      button,
+      true,
+      'Sending…'
+    );
+
+
+    try {
+
+      const client =
+        await ensureSupabase();
+
+
+      const {
+        error
+      } =
+        await client.auth
+          .resetPasswordForEmail(
+            email,
+            {
+
+              redirectTo:
+                `${location.origin}/reset-password/`,
+
+              captchaToken:
+                token
+
+            }
+          );
+
+
+      if (error) {
+
+        throw error;
+      }
+
+
+      form.reset();
+
+
+      showMessage(
+        'Password reset email sent. Check your inbox.',
+        'success'
+      );
+
+
+    } catch (error) {
+
+      showMessage(
+        friendlyError(error),
+        'error'
+      );
+
+
+    } finally {
+
+      resetCaptcha(
+        'reset'
+      );
+
+
+      busy(
+        button,
+        false
+      );
+    }
   }
+
+
+  /* =========================================================
+     CHANGE NAME
+  ========================================================= */
+
+  async function changeName(
+    form
+  ) {
+
+    clearMessage();
+
+
+    if (!currentUser) {
+
+      return;
+    }
+
+
+    const button =
+      form.querySelector(
+        'button[type="submit"]'
+      );
+
+
+    const name =
+      cleanName(
+        form.display_name.value
+      );
+
+
+    if (
+      name.length < 2
+    ) {
+
+      showMessage(
+        'Name must be at least 2 characters.',
+        'error'
+      );
+
+      return;
+    }
+
+
+    busy(
+      button,
+      true,
+      'Saving…'
+    );
+
+
+    try {
+
+      const client =
+        await ensureSupabase();
+
+
+      const {
+        error
+      } =
+        await client.auth
+          .updateUser({
+
+            data: {
+
+              ...currentUser
+                .user_metadata,
+
+              display_name:
+                name
+
+            }
+
+          });
+
+
+      if (error) {
+
+        throw error;
+      }
+
+
+      const result =
+        await profileApi(
+          'PATCH',
+          {
+
+            display_name:
+              name
+
+          }
+        );
+
+
+      currentProfile =
+        result.profile || {
+          ...(currentProfile || {}),
+          display_name: name
+        };
+
+
+      const {
+        data
+      } =
+        await client.auth
+          .getUser();
+
+
+      currentUser =
+        data.user ||
+        currentUser;
+
+
+      renderHeader();
+
+
+      closeModal();
+
+
+      toast(
+        'Name updated.'
+      );
+
+
+    } catch (error) {
+
+      showMessage(
+        friendlyError(error),
+        'error'
+      );
+
+
+    } finally {
+
+      busy(
+        button,
+        false
+      );
+    }
+  }
+
+
+  /* =========================================================
+     CHANGE EMAIL
+  ========================================================= */
+
+  async function changeEmail(
+    form
+  ) {
+
+    clearMessage();
+
+
+    if (!currentUser) {
+
+      return;
+    }
+
+
+    const button =
+      form.querySelector(
+        'button[type="submit"]'
+      );
+
+
+    const email =
+      form.email.value
+        .trim()
+        .toLowerCase();
+
+
+    if (!email) {
+
+      showMessage(
+        'Enter a valid email address.',
+        'error'
+      );
+
+      return;
+    }
+
+
+    if (
+      email ===
+      String(
+        currentUser.email || ''
+      ).toLowerCase()
+    ) {
+
+      showMessage(
+        'This is already your current email.',
+        'error'
+      );
+
+      return;
+    }
+
+
+    busy(
+      button,
+      true,
+      'Updating…'
+    );
+
+
+    try {
+
+      const client =
+        await ensureSupabase();
+
+
+      const {
+        error
+      } =
+        await client.auth
+          .updateUser({
+
+            email
+
+          });
+
+
+      if (error) {
+
+        throw error;
+      }
+
+
+      closeModal();
+
+
+      toast(
+        'Email change requested. Check your inbox for confirmation.'
+      );
+
+
+    } catch (error) {
+
+      showMessage(
+        friendlyError(error),
+        'error'
+      );
+
+
+    } finally {
+
+      busy(
+        button,
+        false
+      );
+    }
+  }
+
+
+  /* =========================================================
+     CHANGE PASSWORD
+  ========================================================= */
+
+  async function changePassword(
+    form
+  ) {
+
+    clearMessage();
+
+
+    if (!currentUser) {
+
+      return;
+    }
+
+
+    const button =
+      form.querySelector(
+        'button[type="submit"]'
+      );
+
+
+    const password =
+      form.password.value;
+
+
+    const confirmPassword =
+      form.confirm_password.value;
+
+
+    if (
+      password.length < 8
+    ) {
+
+      showMessage(
+        'Password must be at least 8 characters.',
+        'error'
+      );
+
+      return;
+    }
+
+
+    if (
+      password !==
+      confirmPassword
+    ) {
+
+      showMessage(
+        'Passwords do not match.',
+        'error'
+      );
+
+      return;
+    }
+
+
+    busy(
+      button,
+      true,
+      'Updating…'
+    );
+
+
+    try {
+
+      const client =
+        await ensureSupabase();
+
+
+      const {
+        error
+      } =
+        await client.auth
+          .updateUser({
+
+            password
+
+          });
+
+
+      if (error) {
+
+        throw error;
+      }
+
+
+      form.reset();
+
+
+      closeModal();
+
+
+      toast(
+        'Password updated successfully.'
+      );
+
+
+    } catch (error) {
+
+      showMessage(
+        friendlyError(error),
+        'error'
+      );
+
+
+    } finally {
+
+      busy(
+        button,
+        false
+      );
+    }
+  }
+
+
+  /* =========================================================
+     LOGOUT
+  ========================================================= */
+
+  async function logout() {
+
+    toggleAccount(false);
+
+
+    try {
+
+      const client =
+        await ensureSupabase();
+
+
+      const {
+        error
+      } =
+        await client.auth.signOut();
+
+
+      if (error) {
+
+        throw error;
+      }
+
+
+      currentUser = null;
+
+      currentProfile = null;
+
+
+      renderHeader();
+
+
+      toast(
+        'You are logged out.'
+      );
+
+
+    } catch (error) {
+
+      toast(
+        friendlyError(error),
+        'error'
+      );
+    }
+  }
+
+
+  /* =========================================================
+     EVENTS
+  ========================================================= */
+
+  function bindEvents() {
+
+    document.addEventListener(
+      'click',
+      event => {
+
+        const authButton =
+          event.target.closest(
+            '[data-open-auth]'
+          );
+
+
+        if (authButton) {
+
+          openModal(
+            authButton.dataset
+              .openAuth ||
+            'login'
+          );
+
+          return;
+        }
+
+
+        const close =
+          event.target.closest(
+            '[data-auth-close]'
+          );
+
+
+        if (close) {
+
+          closeModal();
+
+          return;
+        }
+
+
+        const tab =
+          event.target.closest(
+            '[data-auth-tab]'
+          );
+
+
+        if (tab) {
+
+          showPanel(
+            tab.dataset.authTab
+          );
+
+          return;
+        }
+
+
+        const panelButton =
+          event.target.closest(
+            '[data-open-panel]'
+          );
+
+
+        if (panelButton) {
+
+          showPanel(
+            panelButton.dataset
+              .openPanel
+          );
+
+          return;
+        }
+
+
+        const passToggle =
+          event.target.closest(
+            '[data-password-toggle]'
+          );
+
+
+        if (passToggle) {
+
+          const wrap =
+            passToggle.closest(
+              '.fy-password-field'
+            );
+
+
+          const input =
+            wrap?.querySelector(
+              'input'
+            );
+
+
+          if (!input) return;
+
+
+          if (
+            input.type ===
+            'password'
+          ) {
+
+            input.type =
+              'text';
+
+            passToggle.textContent =
+              'Hide';
+
+          } else {
+
+            input.type =
+              'password';
+
+            passToggle.textContent =
+              'Show';
+
+          }
+
+
+          return;
+        }
+
+
+        const accountTrigger =
+          event.target.closest(
+            '.fy-account-trigger'
+          );
+
+
+        if (accountTrigger) {
+
+          event.stopPropagation();
+
+          toggleAccount();
+
+          return;
+        }
+
+
+        const accountAction =
+          event.target.closest(
+            '[data-account]'
+          );
+
+
+        if (accountAction) {
+
+          event.stopPropagation();
+
+
+          const type =
+            accountAction.dataset
+              .account;
+
+
+          toggleAccount(false);
+
+
+          if (
+            type === 'logout'
+          ) {
+
+            logout();
+
+          } else if (
+            type === 'name' ||
+            type === 'email' ||
+            type === 'password'
+          ) {
+
+            openModal(type);
+
+          }
+
+
+          return;
+        }
+
+
+        if (
+          !event.target.closest(
+            '.fy-account'
+          )
+        ) {
+
+          toggleAccount(false);
+        }
+
+      }
+    );
+
+
+    document.addEventListener(
+      'keydown',
+      event => {
+
+        if (
+          event.key !==
+          'Escape'
+        ) {
+          return;
+        }
+
+
+        const modal =
+          document.getElementById(
+            'fy-auth-modal'
+          );
+
+
+        if (
+          modal &&
+          !modal.hidden
+        ) {
+
+          closeModal();
+
+        } else {
+
+          toggleAccount(false);
+
+        }
+
+      }
+    );
+
+
+    document
+      .getElementById(
+        'fy-login-form'
+      )
+      ?.addEventListener(
+        'submit',
+        event => {
+
+          event.preventDefault();
+
+          login(
+            event.currentTarget
+          );
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        'fy-signup-form'
+      )
+      ?.addEventListener(
+        'submit',
+        event => {
+
+          event.preventDefault();
+
+          signup(
+            event.currentTarget
+          );
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        'fy-reset-form'
+      )
+      ?.addEventListener(
+        'submit',
+        event => {
+
+          event.preventDefault();
+
+          forgotPassword(
+            event.currentTarget
+          );
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        'fy-name-form'
+      )
+      ?.addEventListener(
+        'submit',
+        event => {
+
+          event.preventDefault();
+
+          changeName(
+            event.currentTarget
+          );
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        'fy-email-form'
+      )
+      ?.addEventListener(
+        'submit',
+        event => {
+
+          event.preventDefault();
+
+          changeEmail(
+            event.currentTarget
+          );
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        'fy-password-form'
+      )
+      ?.addEventListener(
+        'submit',
+        event => {
+
+          event.preventDefault();
+
+          changePassword(
+            event.currentTarget
+          );
+
+        }
+      );
+  }
+
+
+  /* =========================================================
+     INIT
+  ========================================================= */
+
+  async function init() {
+
+    loadAuthCss();
+
+    ensureUi();
+
+    ensureHeaderAuth();
+
+    bindEvents();
+
+    renderHeader();
+
+
+    try {
+
+      const client =
+        await ensureSupabase();
+
+
+      const {
+        data
+      } =
+        await client.auth
+          .getSession();
+
+
+      if (
+        data.session
+      ) {
+
+        currentUser =
+          data.session.user;
+
+
+        await loadProfile();
+
+      } else {
+
+        currentUser = null;
+
+        currentProfile = null;
+      }
+
+
+      renderHeader();
+
+
+      client.auth
+        .onAuthStateChange(
+          (
+            event,
+            session
+          ) => {
+
+            setTimeout(
+              async () => {
+
+                currentUser =
+                  session?.user ||
+                  null;
+
+
+                if (
+                  currentUser
+                ) {
+
+                  await loadProfile();
+
+                } else {
+
+                  currentProfile =
+                    null;
+
+                }
+
+
+                renderHeader();
+
+
+                if (
+                  event ===
+                  'PASSWORD_RECOVERY'
+                ) {
+
+                  /*
+                   * Your existing recovery email
+                   * redirects to /reset-password/,
+                   * so normally this modal will
+                   * not be needed.
+                   */
+
+                }
+
+              },
+              0
+            );
+
+          }
+        );
+
+
+    } catch (error) {
+
+      console.error(
+        'Auth UI initialization error:',
+        error
+      );
+    }
+  }
+
+
+  if (
+    document.readyState ===
+    'loading'
+  ) {
+
+    document.addEventListener(
+      'DOMContentLoaded',
+      init,
+      {
+        once: true
+      }
+    );
+
+  } else {
+
+    init();
+
+  }
+
 })();
