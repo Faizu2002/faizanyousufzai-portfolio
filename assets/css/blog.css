@@ -1496,3 +1496,93 @@ body.blog-search-active #start-here{
     transition:none!important;
   }
 }
+
+/* =========================================================
+   FIX: TECHNICAL SEO DARK SECTION TEXT
+========================================================= */
+
+.bloghub-cluster-dark{
+  background:#0c1512;
+  color:#fff;
+}
+
+/* Main heading */
+.bloghub-cluster-dark h2{
+  color:#fff !important;
+}
+
+/* Intro paragraph */
+.bloghub-cluster-dark .bloghub-cluster-head > p{
+  color:#aebbb5 !important;
+}
+
+/* Topic cluster number */
+.bloghub-cluster-dark .bloghub-cluster-index{
+  color:#82958c !important;
+}
+
+/* Eyebrow */
+.bloghub-cluster-dark .eyebrow{
+  color:#7be7bd !important;
+}
+
+.bloghub-cluster-dark .eyebrow::before{
+  background:#7be7bd !important;
+}
+
+
+/* ARTICLE CARDS */
+
+.bloghub-cluster-dark .bloghub-tech-card{
+  background:#111d19;
+  border-color:#293b33;
+  color:#fff;
+}
+
+.bloghub-cluster-dark .bloghub-tech-card h3,
+.bloghub-cluster-dark .bloghub-tech-card h3 a{
+  color:#fff !important;
+}
+
+.bloghub-cluster-dark .bloghub-tech-card h3 a:hover{
+  color:#7be7bd !important;
+}
+
+.bloghub-cluster-dark .bloghub-tech-card p{
+  color:#aebbb5 !important;
+}
+
+.bloghub-cluster-dark .bloghub-category{
+  color:#7be7bd !important;
+}
+
+.bloghub-cluster-dark .bloghub-read{
+  color:#7be7bd !important;
+}
+
+.bloghub-cluster-dark .bloghub-read:hover{
+  color:#fff !important;
+}
+
+
+/* BOTTOM SERVICE CTA */
+
+.bloghub-cluster-dark .bloghub-service-link{
+  border-color:#2c4037;
+}
+
+.bloghub-cluster-dark .bloghub-service-link span{
+  color:#90a198 !important;
+}
+
+.bloghub-cluster-dark .bloghub-service-link strong{
+  color:#fff !important;
+}
+
+.bloghub-cluster-dark .bloghub-service-link a{
+  color:#7be7bd !important;
+}
+
+.bloghub-cluster-dark .bloghub-service-link a:hover{
+  color:#fff !important;
+}
