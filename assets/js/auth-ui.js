@@ -3382,15 +3382,15 @@
 
   async function init() {
 
-    loadAuthCss();
+  await loadAuthCss();
 
-    ensureUi();
+  ensureUi();
 
-    ensureHeaderAuth();
+  ensureHeaderAuth();
 
-    bindEvents();
+  bindEvents();
 
-    renderHeader();
+  renderHeader();
 
 
     try {
