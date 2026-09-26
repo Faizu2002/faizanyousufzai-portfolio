@@ -1404,7 +1404,7 @@ p {
   z-index:3;
   left:50%;
   bottom:0;
-  width:min(500px,42vw);
+  width:min(570px,46vw);
   transform:translateX(-50%);
   pointer-events:none;
 }
@@ -1753,7 +1753,7 @@ p {
   }
 
   .specialist-person img{
-    max-height:560px;
+    max-height:630px;
   }
 
   .specialist-left-note{
