@@ -45,3 +45,24 @@
     headings.forEach(h=>observer.observe(h));
   }
 })();
+
+/* =========================================================
+   GLOBAL AUTH LOADER
+   Paste this ONCE at the END of:
+   1) /assets/js/main.js
+   2) /assets/js/blog.js
+========================================================= */
+
+(() => {
+  if (
+    window.__FAIZAN_AUTH_LOADER__ ||
+    document.querySelector('script[data-faizan-auth-ui]')
+  ) return;
+
+  window.__FAIZAN_AUTH_LOADER__ = true;
+
+  const script = document.createElement('script');
+  script.src = '/assets/js/auth-ui.js';
+  script.dataset.faizanAuthUi = 'true';
+  document.head.appendChild(script);
+})();
