@@ -1643,3 +1643,30 @@ body.blog-search-active #start-here{
   border-color:#fff !important;
   color:#111 !important;
 }
+
+/* =========================================================
+   FIX: SEARCH DROPDOWN ABOVE STICKY BLOG NAV
+========================================================= */
+
+.blogsearch-shell{
+  position:relative;
+  z-index:200 !important;
+}
+
+.blogsearch-box{
+  position:relative;
+  z-index:201;
+}
+
+.blogsearch-main{
+  position:relative;
+  z-index:202;
+}
+
+.blogsearch-suggestions{
+  z-index:9999 !important;
+}
+
+.bloghub-sticky-nav{
+  z-index:80;
+}
