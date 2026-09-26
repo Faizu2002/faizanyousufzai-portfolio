@@ -1421,10 +1421,16 @@ p {
 
 .specialist-cta-card{
   position:absolute;
-  z-index:4;
+  z-index:5;
+
   right:0;
-  bottom:108px;
-  width:250px;
+  top:390px;
+  bottom:auto;
+
+  width:235px;
+
+  padding:0;
+  background:transparent;
 }
 
 .specialist-score{
@@ -1678,9 +1684,10 @@ p {
     width:200px;
   }
 
-  .specialist-cta-card{
-    width:220px;
-  }
+.specialist-cta-card{
+  top:360px;
+  width:205px;
+}
 
   .specialist-word{
     font-size:clamp(6rem,14vw,10rem);
@@ -1755,11 +1762,17 @@ p {
     max-width:620px;
   }
 
-  .specialist-cta-card{
-    width:100%;
-    max-width:620px;
-    margin:24px 0 34px;
-  }
+.specialist-cta-card{
+  position:relative;
+  top:auto;
+  right:auto;
+  bottom:auto;
+
+  width:100%;
+  max-width:620px;
+
+  margin:24px 0 34px;
+}
 
   .specialist-proof-grid{
     grid-template-columns:repeat(2,minmax(0,1fr));
