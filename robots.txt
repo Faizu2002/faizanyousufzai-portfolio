@@ -1,4 +1,10 @@
 User-agent: *
 Allow: /
 
+Disallow: /admin/
+Disallow: /admin
+Disallow: /api/
+
+Allow: /assets/
+
 Sitemap: https://faizanyousufzai.online/sitemap.xml
