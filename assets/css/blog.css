@@ -1587,14 +1587,59 @@ body.blog-search-active #start-here{
   color:#fff !important;
 }
 
-yahn ka b
+/* =========================================================
+   FIX: BLOG FINAL CTA DARK SECTION
+========================================================= */
+
+.bloghub-final-card{
+  background:
+    radial-gradient(circle at 88% 15%, rgba(53,211,153,.20), transparent 26%),
+    #0c1512;
+  color:#fff !important;
+}
+
+.bloghub-final-card .eyebrow{
+  color:#7be7bd !important;
+}
+
+.bloghub-final-card .eyebrow::before{
+  background:#7be7bd !important;
+}
+
+.bloghub-final-card h2{
+  color:#fff !important;
+}
+
+.bloghub-final-card p{
+  color:#aebbb5 !important;
+}
 
 
+/* PRIMARY BUTTON */
 
-**From reading to implementation**
+.bloghub-final-card .btn{
+  background:#fff !important;
+  border-color:#fff !important;
+  color:#111 !important;
+}
 
-## Found the problem? Now fix the website.
+.bloghub-final-card .btn:hover{
+  background:#7be7bd !important;
+  border-color:#7be7bd !important;
+  color:#0c1512 !important;
+}
 
-If a guide describes what is happening on your site, send me the website and the goal. I can help turn the diagnosis into a practical SEO or development scope.
 
-[**Discuss my website ↗**](https://faizanyousufzai.online/contact)[**Explore SEO services**](https://faizanyousufzai.online/services)
+/* SECONDARY BUTTON */
+
+.bloghub-final-card .btn.secondary{
+  background:transparent !important;
+  border-color:#46594f !important;
+  color:#fff !important;
+}
+
+.bloghub-final-card .btn.secondary:hover{
+  background:#fff !important;
+  border-color:#fff !important;
+  color:#111 !important;
+}
