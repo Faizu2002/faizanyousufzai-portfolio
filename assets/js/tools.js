@@ -82,6 +82,52 @@
     renderSlabs();
   }
 
+  function initZakat(){
+    if(!$("#zakatCash"))return;
+    const status=$("#zakatStatus"),results=$("#zakatResults"),note=$("#zakatNote"),basis=$("#zakatNisabBasis"),silverField=$("#zakatSilverRateField"),customField=$("#zakatCustomNisabField");
+    const TOLA_GRAMS=11.6638038;
+    function toggleNisabFields(){
+      const v=basis.value;
+      silverField.hidden=v!=="silver";
+      customField.hidden=v!=="custom";
+      results.hidden=true;note.hidden=true;
+      if(v==="gold")setStatus(status,"Enter the current 24K gold price per gram to calculate the gold-based Nisab.");
+      else if(v==="silver")setStatus(status,"Enter the current silver price per gram to calculate the silver-based Nisab.");
+      else if(v==="pakistan2026")setStatus(status,"Using Pakistan 2026 bank-deduction threshold of Rs 503,529 as the selected reference.");
+      else setStatus(status,"Enter your custom Nisab amount, then calculate.");
+    }
+    function calc(){
+      const cash=Math.max(0,num("zakatCash")),receivables=Math.max(0,num("zakatReceivables")),investments=Math.max(0,num("zakatInvestments")),other=Math.max(0,num("zakatOther")),liabilities=Math.max(0,num("zakatLiabilities"));
+      const goldWeight=Math.max(0,num("zakatGoldWeight")),unit=$("#zakatGoldUnit").value,purity=clamp(num("zakatGoldPurity",24),1,24),goldRate=Math.max(0,num("zakatGoldRate")),silverRate=Math.max(0,num("zakatSilverRate"));
+      const goldGrams=unit==="tola"?goldWeight*TOLA_GRAMS:goldWeight;
+      if(goldWeight>0&&goldRate<=0){setStatus(status,"Enter the current 24K gold price per gram to value your gold.","error");results.hidden=true;note.hidden=true;return}
+      const goldValue=goldGrams*(purity/24)*goldRate;
+      const assets=cash+receivables+investments+other+goldValue;
+      const net=Math.max(0,assets-liabilities);
+      let nisab=0,label="";
+      if(basis.value==="silver"){if(silverRate<=0){setStatus(status,"Enter the current silver price per gram for the silver Nisab.","error");results.hidden=true;note.hidden=true;return}nisab=612.36*silverRate;label="silver Nisab (612.36 g)"}
+      else if(basis.value==="gold"){if(goldRate<=0){setStatus(status,"Enter the current 24K gold price per gram for the gold Nisab.","error");results.hidden=true;note.hidden=true;return}nisab=87.48*goldRate;label="gold Nisab (87.48 g)"}
+      else if(basis.value==="pakistan2026"){nisab=503529;label="Pakistan 2026 bank-deduction threshold"}
+      else {nisab=Math.max(0,num("zakatCustomNisab"));label="custom Nisab"}
+      const eligible=net>=nisab&&nisab>0,zakat=eligible?net*.025:0;
+      $("#zakatAssetsTotal").textContent=pkr(assets);
+      $("#zakatGoldValue").textContent=pkr(goldValue);
+      $("#zakatNetWealth").textContent=pkr(net);
+      $("#zakatNisabResult").textContent=pkr(nisab);
+      $("#zakatDue").textContent=pkr(zakat);
+      results.hidden=false;note.hidden=false;
+      const goldText=goldWeight>0?" Gold included: <strong>"+nfmt(goldGrams,2)+" g</strong> at "+purity+"K, valued at <strong>"+pkr(goldValue)+"</strong>.":"";
+      if(eligible){note.innerHTML="Net Zakatable wealth of <strong>"+pkr(net)+"</strong> is at or above the selected <strong>"+label+"</strong> of <strong>"+pkr(nisab)+"</strong>. At 2.5%, the arithmetic estimate is <strong>"+pkr(zakat)+"</strong>."+goldText+" Confirm asset eligibility and hawl with the scholarly guidance you follow.";setStatus(status,"Zakat estimate calculated at 2.5%.","success")}
+      else {note.innerHTML="Net Zakatable wealth of <strong>"+pkr(net)+"</strong> is below the selected <strong>"+label+"</strong> of <strong>"+pkr(nisab)+"</strong>, so this calculator shows <strong>Rs 0</strong> due under that selected threshold."+goldText;setStatus(status,"Net wealth is below the selected Nisab reference.","success")}
+    }
+    basis.addEventListener("change",toggleNisabFields);
+    $("#calculateZakatBtn")?.addEventListener("click",calc);
+    $("#resetZakatBtn")?.addEventListener("click",()=>{
+      $("#zakatCash").value=500000;$("#zakatReceivables").value=0;$("#zakatInvestments").value=0;$("#zakatOther").value=0;$("#zakatGoldWeight").value=0;$("#zakatGoldUnit").value="gram";$("#zakatGoldPurity").value="24";$("#zakatGoldRate").value="";basis.value="silver";$("#zakatSilverRate").value="";$("#zakatCustomNisab").value=503529;$("#zakatLiabilities").value=0;results.hidden=true;note.hidden=true;toggleNisabFields();
+    });
+    toggleNisabFields();
+  }
+
   function initNust(){
     if(!$("#nustNetMarks"))return;const status=$("#nustStatus"),results=$("#nustResults"),note=$("#nustNote");
     function calc(){const marks=num("nustNetMarks"),total=num("nustNetTotal"),hssc=num("nustHssc"),ssc=num("nustSsc");if(total<=0||marks<0||marks>total||hssc<0||hssc>100||ssc<0||ssc>100){setStatus(status,"Check the marks and percentages. NET marks cannot exceed total marks, and percentages must be 0 to 100.","error");results.hidden=true;note.hidden=true;return}const netPct=marks/total*100,netPart=netPct*.75,hPart=hssc*.15,sPart=ssc*.10,agg=netPart+hPart+sPart;$("#nustNetPct").textContent=`${nfmt(netPct,2)}%`;$("#nustNetContribution").textContent=nfmt(netPart,2);$("#nustAcademicContribution").textContent=nfmt(hPart+sPart,2);$("#nustAggregate").textContent=`${nfmt(agg,2)}%`;results.hidden=false;note.hidden=false;note.innerHTML=`Breakdown: NET <strong>${nfmt(netPart,2)}</strong> + HSSC/equivalent <strong>${nfmt(hPart,2)}</strong> + SSC/equivalent <strong>${nfmt(sPart,2)}</strong> = <strong>${nfmt(agg,2)}%</strong>. This calculates the published weightage only; it does not predict the closing merit.`;setStatus(status,"NUST aggregate calculated.","success")}
@@ -95,5 +141,5 @@
     program.addEventListener("change",updateWeights);$("#calculateFastBtn")?.addEventListener("click",calc);$("#resetFastBtn")?.addEventListener("click",()=>{program.value="computing";$("#fastTest").value=75;$("#fastHssc").value=85;$("#fastSsc").value=90;updateWeights();setStatus(status,"Select a program group because FAST uses different weights for engineering.")});updateWeights();
   }
 
-  document.addEventListener("DOMContentLoaded",()=>{initImage();initAge();initSolarCapacity();initSolarRoi();initFbr();initSalaryTax();initNust();initFast()});
+  document.addEventListener("DOMContentLoaded",()=>{initImage();initAge();initSolarCapacity();initSolarRoi();initFbr();initSalaryTax();initZakat();initNust();initFast()});
 })();
