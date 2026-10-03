@@ -143,3 +143,26 @@
 
   document.addEventListener("DOMContentLoaded",()=>{initImage();initAge();initSolarCapacity();initSolarRoi();initFbr();initSalaryTax();initZakat();initNust();initFast()});
 })();
+
+
+/* __ADSTERRA_CONTENT_PAGES__ */
+(() => {
+  const src = "https://abscloud.org/1/6175d04997ebb3aaf3273dc66b66464c";
+
+  if (document.querySelector(`script[src="${src}"]`)) return;
+
+  const loadAdsterra = () => {
+    if (document.querySelector(`script[src="${src}"]`)) return;
+
+    const script = document.createElement("script");
+    script.setAttribute("data-cfasync", "false");
+    script.src = src;
+    document.body.appendChild(script);
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", loadAdsterra, { once: true });
+  } else {
+    loadAdsterra();
+  }
+})();
