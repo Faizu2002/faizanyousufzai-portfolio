@@ -419,3 +419,21 @@ document.addEventListener("DOMContentLoaded", () => {
   script.dataset.faizanAuthUi = 'true';
   document.head.appendChild(script);
 })();
+
+
+/* __FAIZAN_LEGAL_FOOTER__ */
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".copyright").forEach((el) => {
+    if (el.querySelector('a[href="/terms"]')) return;
+    const privacy = el.querySelector('a[href="/privacy-policy"]');
+    const sep = document.createTextNode(" · ");
+    const terms = document.createElement("a");
+    terms.href = "/terms";
+    terms.textContent = "Terms";
+    if (privacy) {
+      privacy.after(sep, terms);
+    } else {
+      el.append(sep, terms);
+    }
+  });
+});
