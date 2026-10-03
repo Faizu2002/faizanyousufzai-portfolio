@@ -41,3 +41,5 @@
 /admin.html /admin/ 301
 /account.html /account/ 301
 /reset-password.html /reset-password/ 301
+
+/terms.html /terms 301
