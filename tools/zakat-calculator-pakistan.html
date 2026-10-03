@@ -141,23 +141,23 @@
           <div class="tools-form-grid">
             <div class="tools-field">
               <label for="zakatCash">Cash &amp; bank savings</label>
-              <div class="tools-input-prefix"><span>Rs</span><input id="zakatCash" type="number" min="0" step="1000" value="500000"></div>
+              <div class="tools-input-prefix"><span>Rs</span><input id="zakatCash" type="number" inputmode="decimal" min="0" step="1000" value="500000"></div>
             </div>
 
             <div class="tools-field">
               <label for="zakatReceivables">Money owed to you</label>
-              <div class="tools-input-prefix"><span>Rs</span><input id="zakatReceivables" type="number" min="0" step="1000" value="0"></div>
+              <div class="tools-input-prefix"><span>Rs</span><input id="zakatReceivables" type="number" inputmode="decimal" min="0" step="1000" value="0"></div>
             </div>
 
             <div class="tools-field">
               <label for="zakatInvestments">Investments / business stock</label>
-              <div class="tools-input-prefix"><span>Rs</span><input id="zakatInvestments" type="number" min="0" step="1000" value="0"></div>
+              <div class="tools-input-prefix"><span>Rs</span><input id="zakatInvestments" type="number" inputmode="decimal" min="0" step="1000" value="0"></div>
               <small>Enter the Zakatable value you want included.</small>
             </div>
 
             <div class="tools-field">
               <label for="zakatOther">Other Zakatable assets</label>
-              <div class="tools-input-prefix"><span>Rs</span><input id="zakatOther" type="number" min="0" step="1000" value="0"></div>
+              <div class="tools-input-prefix"><span>Rs</span><input id="zakatOther" type="number" inputmode="decimal" min="0" step="1000" value="0"></div>
             </div>
           </div>
 
@@ -174,7 +174,7 @@
           <div class="tools-form-grid tools-form-grid-three">
             <div class="tools-field">
               <label for="zakatGoldWeight">Gold weight</label>
-              <input id="zakatGoldWeight" type="number" min="0" step="0.01" value="0">
+              <input id="zakatGoldWeight" type="number" inputmode="decimal" min="0" step="0.01" value="0">
             </div>
 
             <div class="tools-field">
@@ -197,7 +197,7 @@
 
             <div class="tools-field tools-field-full">
               <label for="zakatGoldRate">Current 24K gold price per gram</label>
-              <div class="tools-input-prefix"><span>Rs</span><input id="zakatGoldRate" type="number" min="0" step="1" placeholder="Enter today's 24K gold price per gram"></div>
+              <div class="tools-input-prefix"><span>Rs</span><input id="zakatGoldRate" type="number" inputmode="decimal" min="0" step="1" placeholder="Enter today's 24K gold price per gram"></div>
               <small>Gold prices change daily, so this field is intentionally editable instead of using a stale hard-coded price.</small>
             </div>
           </div>
@@ -225,17 +225,17 @@
 
             <div class="tools-field" id="zakatSilverRateField">
               <label for="zakatSilverRate">Current silver price per gram</label>
-              <div class="tools-input-prefix"><span>Rs</span><input id="zakatSilverRate" type="number" min="0" step="0.01" placeholder="Enter today's silver price per gram"></div>
+              <div class="tools-input-prefix"><span>Rs</span><input id="zakatSilverRate" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Enter today's silver price per gram"></div>
             </div>
 
             <div class="tools-field" id="zakatCustomNisabField" hidden>
               <label for="zakatCustomNisab">Custom Nisab</label>
-              <div class="tools-input-prefix"><span>Rs</span><input id="zakatCustomNisab" type="number" min="0" step="1000" value="503529"></div>
+              <div class="tools-input-prefix"><span>Rs</span><input id="zakatCustomNisab" type="number" inputmode="decimal" min="0" step="1000" value="503529"></div>
             </div>
 
             <div class="tools-field tools-field-full">
               <label for="zakatLiabilities">Short-term liabilities / amounts due</label>
-              <div class="tools-input-prefix"><span>Rs</span><input id="zakatLiabilities" type="number" min="0" step="1000" value="0"></div>
+              <div class="tools-input-prefix"><span>Rs</span><input id="zakatLiabilities" type="number" inputmode="decimal" min="0" step="1000" value="0"></div>
               <small>Only enter liabilities you have decided are deductible under the guidance you follow.</small>
             </div>
           </div>
