@@ -1425,3 +1425,207 @@ body.tool-search-active .toolshub-needs{
     transition:none!important;
   }
 }
+
+
+/* NEW FINANCE TOOLS MOBILE PASS */
+body[data-tool="salary-tax-calculator-pakistan"],
+body[data-tool="zakat-calculator-pakistan"]{
+  overflow-x:hidden;
+}
+
+body[data-tool="salary-tax-calculator-pakistan"] .tools-panel,
+body[data-tool="salary-tax-calculator-pakistan"] .tools-side,
+body[data-tool="salary-tax-calculator-pakistan"] .tools-related,
+body[data-tool="zakat-calculator-pakistan"] .tools-panel,
+body[data-tool="zakat-calculator-pakistan"] .tools-side,
+body[data-tool="zakat-calculator-pakistan"] .tools-related{
+  min-width:0;
+}
+
+body[data-tool="salary-tax-calculator-pakistan"] .tools-table-wrap,
+body[data-tool="zakat-calculator-pakistan"] .tools-table-wrap{
+  max-width:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
+body[data-tool="salary-tax-calculator-pakistan"] .tools-table,
+body[data-tool="zakat-calculator-pakistan"] .tools-table{
+  min-width:0;
+  table-layout:fixed;
+}
+
+body[data-tool="salary-tax-calculator-pakistan"] .tools-table th,
+body[data-tool="salary-tax-calculator-pakistan"] .tools-table td,
+body[data-tool="zakat-calculator-pakistan"] .tools-table th,
+body[data-tool="zakat-calculator-pakistan"] .tools-table td{
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+
+body[data-tool="salary-tax-calculator-pakistan"] .tools-field input,
+body[data-tool="salary-tax-calculator-pakistan"] .tools-field select,
+body[data-tool="zakat-calculator-pakistan"] .tools-field input,
+body[data-tool="zakat-calculator-pakistan"] .tools-field select{
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+body[data-tool="salary-tax-calculator-pakistan"] .tools-result-card strong,
+body[data-tool="zakat-calculator-pakistan"] .tools-result-card strong{
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+body[data-tool="salary-tax-calculator-pakistan"] .tools-status,
+body[data-tool="salary-tax-calculator-pakistan"] .tools-result-note,
+body[data-tool="salary-tax-calculator-pakistan"] .tools-source,
+body[data-tool="zakat-calculator-pakistan"] .tools-status,
+body[data-tool="zakat-calculator-pakistan"] .tools-result-note,
+body[data-tool="zakat-calculator-pakistan"] .tools-source{
+  overflow-wrap:anywhere;
+}
+
+body[data-tool="salary-tax-calculator-pakistan"] .adsterra-banner,
+body[data-tool="zakat-calculator-pakistan"] .adsterra-banner{
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+}
+
+@media(max-width:720px){
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-hero,
+  body[data-tool="zakat-calculator-pakistan"] .tools-hero{
+    padding-top:30px;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-hero h1,
+  body[data-tool="zakat-calculator-pakistan"] .tools-hero h1{
+    font-size:clamp(2.15rem,10vw,3.15rem);
+    line-height:1;
+    letter-spacing:-.045em;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-hero p,
+  body[data-tool="zakat-calculator-pakistan"] .tools-hero p{
+    font-size:.98rem;
+    line-height:1.65;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-panel,
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-side,
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-related,
+  body[data-tool="zakat-calculator-pakistan"] .tools-panel,
+  body[data-tool="zakat-calculator-pakistan"] .tools-side,
+  body[data-tool="zakat-calculator-pakistan"] .tools-related{
+    padding:18px;
+    border-radius:18px;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-panel-head h2,
+  body[data-tool="zakat-calculator-pakistan"] .tools-panel-head h2{
+    font-size:1.42rem;
+    line-height:1.15;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-field input,
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-field select,
+  body[data-tool="zakat-calculator-pakistan"] .tools-field input,
+  body[data-tool="zakat-calculator-pakistan"] .tools-field select{
+    font-size:16px;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-input-prefix span,
+  body[data-tool="zakat-calculator-pakistan"] .tools-input-prefix span{
+    padding:0 10px;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-results-five,
+  body[data-tool="zakat-calculator-pakistan"] .tools-results-five{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-result-card,
+  body[data-tool="zakat-calculator-pakistan"] .tools-result-card{
+    padding:16px 12px;
+    border-radius:14px;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-result-card strong,
+  body[data-tool="zakat-calculator-pakistan"] .tools-result-card strong{
+    font-size:clamp(1.08rem,5vw,1.55rem);
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-table,
+  body[data-tool="zakat-calculator-pakistan"] .tools-table{
+    width:100%;
+    min-width:0;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-table th,
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-table td,
+  body[data-tool="zakat-calculator-pakistan"] .tools-table th,
+  body[data-tool="zakat-calculator-pakistan"] .tools-table td{
+    padding:10px 8px;
+    font-size:.82rem;
+    line-height:1.45;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-content,
+  body[data-tool="zakat-calculator-pakistan"] .tools-content{
+    gap:22px;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-copy h2,
+  body[data-tool="zakat-calculator-pakistan"] .tools-copy h2{
+    font-size:clamp(1.65rem,8vw,2.2rem);
+    line-height:1.08;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-breadcrumbs,
+  body[data-tool="zakat-calculator-pakistan"] .tools-breadcrumbs{
+    flex-wrap:wrap;
+    overflow:visible;
+    line-height:1.4;
+  }
+}
+
+@media(max-width:520px){
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-results-five,
+  body[data-tool="zakat-calculator-pakistan"] .tools-results-five{
+    grid-template-columns:1fr;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-actions,
+  body[data-tool="zakat-calculator-pakistan"] .tools-actions{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:9px;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-actions .btn,
+  body[data-tool="zakat-calculator-pakistan"] .tools-actions .btn{
+    width:100%;
+    min-height:48px;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-table th,
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-table td,
+  body[data-tool="zakat-calculator-pakistan"] .tools-table th,
+  body[data-tool="zakat-calculator-pakistan"] .tools-table td{
+    padding:9px 7px;
+    font-size:.78rem;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .tools-divider,
+  body[data-tool="zakat-calculator-pakistan"] .tools-divider{
+    margin:24px 0;
+  }
+
+  body[data-tool="salary-tax-calculator-pakistan"] .adsterra-banner,
+  body[data-tool="zakat-calculator-pakistan"] .adsterra-banner{
+    margin:24px auto!important;
+    min-height:300px;
+  }
+}
