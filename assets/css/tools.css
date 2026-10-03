@@ -1629,3 +1629,15 @@ body[data-tool="zakat-calculator-pakistan"] .adsterra-banner{
     min-height:300px;
   }
 }
+
+
+/* FINANCE CATEGORY WIDE CARD */
+#finance-tools .toolshub-card-wide{
+  grid-column:1/-1;
+}
+
+@media(max-width:640px){
+  #finance-tools .toolshub-card-wide{
+    grid-column:auto;
+  }
+}
