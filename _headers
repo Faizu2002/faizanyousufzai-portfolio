@@ -1,0 +1,26 @@
+# Browser caching for static assets.
+# HTML keeps Cloudflare's default revalidation so new deploys appear quickly.
+
+/assets/images/*
+  Cache-Control: public, max-age=2592000
+
+/assets/icons/*
+  Cache-Control: public, max-age=2592000
+
+/assets/css/*
+  Cache-Control: public, max-age=86400
+
+/assets/js/*
+  Cache-Control: public, max-age=86400
+
+/*.png
+  Cache-Control: public, max-age=2592000
+
+/*.webp
+  Cache-Control: public, max-age=2592000
+
+/*.svg
+  Cache-Control: public, max-age=2592000
+
+/*.ico
+  Cache-Control: public, max-age=2592000
