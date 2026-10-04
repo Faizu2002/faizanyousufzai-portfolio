@@ -266,9 +266,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const rawResponse = await response.text();
 
-      console.log("Ayra API status:", response.status);
-      console.log("Ayra API raw response:", rawResponse);
-
       if (loadingMessage) {
         loadingMessage.remove();
       }
@@ -401,9 +398,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* =========================================================
    GLOBAL AUTH LOADER
-   Paste this ONCE at the END of:
-   1) /assets/js/main.js
-   2) /assets/js/blog.js
+   Load heavy auth code only when the visitor interacts.
+   A fallback timer keeps the account UI available on idle pages.
 ========================================================= */
 
 (() => {
@@ -412,12 +408,34 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelector('script[data-faizan-auth-ui]')
   ) return;
 
-  window.__FAIZAN_AUTH_LOADER__ = true;
+  let loaded = false;
 
-  const script = document.createElement('script');
-  script.src = '/assets/js/auth-ui.js';
-  script.dataset.faizanAuthUi = 'true';
-  document.head.appendChild(script);
+  const loadAuthUi = () => {
+    if (loaded || document.querySelector('script[data-faizan-auth-ui]')) return;
+
+    loaded = true;
+    window.__FAIZAN_AUTH_LOADER__ = true;
+
+    const script = document.createElement('script');
+    script.src = '/assets/js/auth-ui.js';
+    script.defer = true;
+    script.dataset.faizanAuthUi = 'true';
+    document.head.appendChild(script);
+  };
+
+  const interactionEvents = ['pointerdown', 'touchstart'];
+
+  interactionEvents.forEach((eventName) => {
+    window.addEventListener(eventName, loadAuthUi, {
+      once: true,
+      passive: true
+    });
+  });
+
+  window.addEventListener('keydown', loadAuthUi, { once: true });
+
+  // Keep the existing auth experience available even if a visitor only reads.
+  window.setTimeout(loadAuthUi, 12000);
 })();
 
 
