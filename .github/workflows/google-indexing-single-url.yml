@@ -1,0 +1,35 @@
+name: Google Indexing API - Single URL
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/google-indexing-single-url.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GOOGLE_INDEXING_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_INDEXING_SERVICE_ACCOUNT }}
+      SITE_URL: "https://faizanyousufzai.online"
+      MAX_URLS: "1"
+      DELAY_MS: "0"
+      EXPLICIT_URLS: |
+        https://faizanyousufzai.online/blog/da-score-checker
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Submit URL
+        run: node scripts/google-indexing-submit.mjs
