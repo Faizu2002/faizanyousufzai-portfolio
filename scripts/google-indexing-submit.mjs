@@ -125,8 +125,14 @@ async function main() {
   const credentials = getServiceAccount();
   const accessToken = await getAccessToken(credentials);
 
-  console.log(`Fetching sitemap: ${SITEMAP_URL}`);
-  const discovered = await collectUrlsFromSitemap(SITEMAP_URL);
+  let discovered;
+  if (EXPLICIT_URLS.length) {
+    console.log(`Using ${EXPLICIT_URLS.length} explicit URL(s).`);
+    discovered = EXPLICIT_URLS;
+  } else {
+    console.log(`Fetching sitemap: ${SITEMAP_URL}`);
+    discovered = await collectUrlsFromSitemap(SITEMAP_URL);
+  }
   const urls = [...new Set(discovered)].filter(isAllowedUrl).slice(0, MAX_URLS);
 
   if (!urls.length) throw new Error("No same-domain URLs were found in the sitemap.");
