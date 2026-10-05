@@ -1,0 +1,44 @@
+name: Google Indexing API - 10 Blog URLs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/google-indexing-10-blogs.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GOOGLE_INDEXING_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_INDEXING_SERVICE_ACCOUNT }}
+      SITE_URL: "https://faizanyousufzai.online"
+      MAX_URLS: "10"
+      DELAY_MS: "500"
+      EXPLICIT_URLS: |
+        https://faizanyousufzai.online/blog/how-to-fix-core-web-vitals-in-2026
+        https://faizanyousufzai.online/blog/schema-markup-practical-guide
+        https://faizanyousufzai.online/blog/technical-seo-checklist-small-websites
+        https://faizanyousufzai.online/blog/content-for-ai-search
+        https://faizanyousufzai.online/blog/seo-friendly-website-migration
+        https://faizanyousufzai.online/blog/backlink-strategy-built-around-relevance
+        https://faizanyousufzai.online/blog/solar-system-size-calculator-find-the-right-solar-kw-for-your-home
+        https://faizanyousufzai.online/blog/seo-tools-box-guide-to-choosing-the-right-seo-tools
+        https://faizanyousufzai.online/blog/free-audit-seo-website-guide
+        https://faizanyousufzai.online/blog/local-search-seo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Submit 10 blog URLs
+        run: node scripts/google-indexing-submit.mjs
