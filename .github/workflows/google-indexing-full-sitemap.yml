@@ -1,0 +1,34 @@
+name: Google Indexing API - Full Sitemap
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/google-indexing-full-sitemap.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GOOGLE_INDEXING_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_INDEXING_SERVICE_ACCOUNT }}
+      SITE_URL: "https://faizanyousufzai.online"
+      SITEMAP_URL: "https://faizanyousufzai.online/sitemap.xml"
+      MAX_URLS: "100"
+      DELAY_MS: "500"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Submit full sitemap
+        run: node scripts/google-indexing-submit.mjs
