@@ -1,4 +1,5 @@
 name: Google Indexing API - 10 Blog URLs
+# explicit blog batch retry
 
 on:
   push:
