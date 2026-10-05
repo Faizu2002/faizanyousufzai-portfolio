@@ -1,6 +1,11 @@
 name: Google Indexing API Submit
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/google-indexing-api.yml"
   workflow_dispatch:
     inputs:
       max_urls:
@@ -19,7 +24,7 @@ jobs:
       GOOGLE_INDEXING_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_INDEXING_SERVICE_ACCOUNT }}
       SITE_URL: "https://faizanyousufzai.online"
       SITEMAP_URL: "https://faizanyousufzai.online/sitemap.xml"
-      MAX_URLS: ${{ inputs.max_urls }}
+      MAX_URLS: ${{ github.event_name == 'push' && '5' || inputs.max_urls }}
       DELAY_MS: "500"
 
     steps:
