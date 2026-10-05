@@ -1,0 +1,35 @@
+name: Google Indexing API Submit
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_urls:
+        description: "Maximum sitemap URLs to submit (1-100)"
+        required: false
+        default: "100"
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GOOGLE_INDEXING_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_INDEXING_SERVICE_ACCOUNT }}
+      SITE_URL: "https://faizanyousufzai.online"
+      SITEMAP_URL: "https://faizanyousufzai.online/sitemap.xml"
+      MAX_URLS: ${{ inputs.max_urls }}
+      DELAY_MS: "500"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Submit sitemap URLs
+        run: node scripts/google-indexing-submit.mjs
