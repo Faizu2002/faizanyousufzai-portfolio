@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <title>Meta Title Checker & Meta Description Checker | SEO Tool</title>
+  <meta name="description" content="Check title tags and meta descriptions with a free meta title checker, meta description checker and SEO meta tag analyzer with length checks and SERP preview.">
+  <meta name="robots" content="noindex,follow,max-image-preview:large">
+  <link rel="canonical" href="https://faizanyousufzai.online/seo-tools/meta-tag-checker/">
+
+  <link rel="icon" type="image/png" sizes="96x96" href="../../favicon-96x96.png">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+  <link rel="shortcut icon" href="../../favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png">
+  <link rel="manifest" href="../../site.webmanifest">
+
+  <meta name="theme-color" content="#0e1211">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Meta Title Checker & Meta Description Checker">
+  <meta property="og:description" content="Analyze title tags and meta descriptions, check length, review important metadata and preview a search result snippet.">
+  <meta property="og:url" content="https://faizanyousufzai.online/seo-tools/meta-tag-checker/">
+  <meta property="og:image" content="https://faizanyousufzai.online/assets/images/og-home.jpg">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Meta Title Checker & Meta Description Checker">
+  <meta name="twitter:description" content="Check title tags, meta descriptions and important page metadata in your browser.">
+  <meta name="twitter:image" content="https://faizanyousufzai.online/assets/images/og-home.jpg">
+
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <link rel="stylesheet" href="../../assets/css/seo-tools.css">
+
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"WebApplication",
+    "name":"Meta Title & Description Checker",
+    "url":"https://faizanyousufzai.online/seo-tools/meta-tag-checker/",
+    "applicationCategory":"SEOApplication",
+    "operatingSystem":"Any",
+    "description":"Browser-based tool for checking title tags, meta descriptions and common page metadata."
+  }
+  </script>
+</head>
+
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="wrap nav">
+      <a aria-label="Faizan Yousufzai home" class="brand" href="/">
+        <img alt="Faizan Yousufzai logo" height="45" src="../../assets/images/faizan-logo.webp" width="45">
+        <span>Faizan Yousufzai</span>
+      </a>
+
+      <nav aria-label="Main navigation" class="navlinks">
+        <a href="/">Home</a>
+        <a href="/services">Services</a>
+        <a href="/portfolio">Case Studies</a>
+        <a href="/about">About</a>
+        <a href="/blog/">Blog</a>
+        <a aria-current="page" href="/seo-tools/">SEO Tools</a>
+        <a href="/contact">Contact</a>
+      </nav>
+
+      <a class="btn small" href="https://wa.me/923182203481" rel="noopener" target="_blank">
+        Let's Talk <span class="arrow">↗</span>
+      </a>
+
+      <button aria-expanded="false" aria-label="Open navigation" class="menu">☰</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <nav class="wrap seo-tools-breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span>/</span>
+      <a href="/seo-tools/">SEO Tools</a>
+      <span>/</span>
+      <span aria-current="page">Meta Tag Checker</span>
+    </nav>
+
+    <section class="mtc-hero">
+      <div class="wrap mtc-hero-grid">
+        <div>
+          <span class="eyebrow">Free SEO Tool</span>
+          <h1>Meta Title &amp; <span>Description Checker</span></h1>
+          <p class="lead">
+            Paste a page's HTML and check its title tag, meta description, length,
+            canonical URL, robots directive, viewport and other useful metadata.
+            Everything is analyzed in your browser.
+          </p>
+          <div class="seo-tools-pills" aria-label="Tool features">
+            <span>Title length check</span>
+            <span>Description length check</span>
+            <span>SERP preview</span>
+            <span>No signup</span>
+          </div>
+        </div>
+
+        <div class="mtc-score-card" aria-hidden="true">
+          <small>META HEALTH</small>
+          <strong id="hero-score">--</strong>
+          <span>Analyze a page below</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="mtc-tool-section">
+      <div class="wrap">
+        <div class="mtc-tool-shell">
+          <div class="mtc-input-panel">
+            <div class="mtc-panel-head">
+              <div>
+                <span class="eyebrow">Analyze metadata</span>
+                <h2>Paste page HTML</h2>
+              </div>
+              <button class="mtc-text-button" type="button" id="load-example">Load example</button>
+            </div>
+
+            <label class="mtc-label" for="page-url">Page URL <span>optional, used in preview</span></label>
+            <input class="mtc-input" id="page-url" type="url" inputmode="url" placeholder="https://example.com/page">
+
+            <label class="mtc-label" for="html-input">HTML source</label>
+            <textarea class="mtc-textarea" id="html-input" rows="13" spellcheck="false" placeholder="Paste the page source or the complete &lt;head&gt; section here..."></textarea>
+
+            <p class="mtc-help">
+              Tip: open the page source in your browser, copy the HTML, then paste it here.
+              The tool does not upload the pasted HTML anywhere.
+            </p>
+
+            <div class="mtc-actions">
+              <button class="btn" type="button" id="analyze-meta">Analyze meta tags</button>
+              <button class="btn secondary" type="button" id="reset-meta">Reset</button>
+            </div>
+
+            <div class="mtc-message" id="tool-message" role="status" aria-live="polite"></div>
+          </div>
+
+          <aside class="mtc-guide">
+            <span class="eyebrow">Quick guide</span>
+            <h2>What gets checked?</h2>
+            <ul>
+              <li><strong>Title tag</strong> presence and character length</li>
+              <li><strong>Meta description</strong> presence and character length</li>
+              <li><strong>Canonical URL</strong> and robots directive</li>
+              <li><strong>Viewport</strong> and page language</li>
+              <li><strong>Open Graph</strong> title and description</li>
+              <li><strong>SERP preview</strong> for a quick visual check</li>
+            </ul>
+            <p>
+              Character ranges are guidance, not a Google rule. Search snippets can
+              change by device, query and pixel width.
+            </p>
+          </aside>
+        </div>
+
+        <section class="mtc-results" id="meta-results" hidden aria-live="polite">
+          <div class="mtc-results-head">
+            <div>
+              <span class="eyebrow">Results</span>
+              <h2>Meta tag analysis</h2>
+            </div>
+            <div class="mtc-overall-score">
+              <strong id="overall-score">0</strong>
+              <span>/100</span>
+            </div>
+          </div>
+
+          <div class="mtc-result-grid">
+            <article class="mtc-result-card">
+              <div class="mtc-result-top">
+                <span>Title tag</span>
+                <b id="title-status" class="mtc-status">Not checked</b>
+              </div>
+              <h3 id="title-value">No title found</h3>
+              <div class="mtc-meter"><span id="title-meter"></span></div>
+              <div class="mtc-metrics">
+                <span><b id="title-chars">0</b> characters</span>
+                <span><b id="title-pixels">0</b> px approx.</span>
+              </div>
+              <p id="title-advice"></p>
+            </article>
+
+            <article class="mtc-result-card">
+              <div class="mtc-result-top">
+                <span>Meta description</span>
+                <b id="description-status" class="mtc-status">Not checked</b>
+              </div>
+              <p class="mtc-description-value" id="description-value">No meta description found</p>
+              <div class="mtc-meter"><span id="description-meter"></span></div>
+              <div class="mtc-metrics">
+                <span><b id="description-chars">0</b> characters</span>
+                <span><b id="description-pixels">0</b> px approx.</span>
+              </div>
+              <p id="description-advice"></p>
+            </article>
+          </div>
+
+          <div class="mtc-meta-grid">
+            <article><span>Canonical</span><strong id="canonical-value">Not found</strong></article>
+            <article><span>Robots</span><strong id="robots-value">Not found</strong></article>
+            <article><span>Viewport</span><strong id="viewport-value">Not found</strong></article>
+            <article><span>Language</span><strong id="lang-value">Not found</strong></article>
+            <article><span>OG title</span><strong id="og-title-value">Not found</strong></article>
+            <article><span>OG description</span><strong id="og-description-value">Not found</strong></article>
+          </div>
+
+          <section class="mtc-serp">
+            <div class="mtc-serp-head">
+              <div>
+                <span class="eyebrow">Preview</span>
+                <h2>Google-style search preview</h2>
+              </div>
+              <span class="mtc-preview-note">Approximate preview</span>
+            </div>
+
+            <div class="mtc-google-card">
+              <div class="mtc-google-site">
+                <span class="mtc-favicon">F</span>
+                <div>
+                  <strong id="preview-site">Example</strong>
+                  <small id="preview-url">https://example.com/page</small>
+                </div>
+              </div>
+              <h3 id="preview-title">Your page title will appear here</h3>
+              <p id="preview-description">Your meta description will appear here after analysis.</p>
+            </div>
+          </section>
+        </section>
+      </div>
+    </section>
+
+    <section class="seo-tools-section">
+      <div class="wrap seo-tools-copy-grid">
+        <div>
+          <span class="eyebrow">How it works</span>
+          <h2>Check your title and meta description before publishing.</h2>
+        </div>
+
+        <div class="seo-tools-copy">
+          <p>
+            This <strong>meta title checker</strong> and <strong>meta description checker</strong>
+            reads the HTML you paste and shows the title, description and other important
+            tags in one place. It also works as a simple <strong>title tag checker</strong>
+            when you only want to review the page title.
+          </p>
+
+          <h3>What should a good title tag do?</h3>
+          <p>
+            A title should clearly explain the page topic and give searchers a reason
+            to click. The tool acts as a <strong>meta title length checker</strong> and
+            <strong>SEO title checker</strong>, but length is only one part of a good title.
+            Relevance, wording and search intent matter more than hitting an exact number.
+          </p>
+
+          <h3>How long should a meta description be?</h3>
+          <p>
+            There is no fixed character limit that guarantees how Google will show a
+            snippet. As a practical guide, descriptions around 140 to 160 characters
+            often give enough space to explain the page. The
+            <strong>meta description length checker</strong> flags very short or long
+            descriptions so you can review them quickly.
+          </p>
+
+          <h3>More than a basic metadata check</h3>
+          <p>
+            A useful <strong>SEO meta tag checker</strong> should look beyond two fields.
+            This page also works as a lightweight <strong>meta tags checker</strong>,
+            <strong>website meta tag checker</strong>, <strong>meta data checker</strong>
+            and <strong>meta tag analyzer</strong> by reviewing canonical, robots,
+            viewport, language and Open Graph metadata.
+          </p>
+
+          <h3>What about a Google meta title checker?</h3>
+          <p>
+            A <strong>Google meta title checker</strong> can only provide an estimate.
+            Google may rewrite titles or descriptions based on the query and page content.
+            Use the preview to spot obvious issues, then judge the title by clarity,
+            relevance and how well it matches the page.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="seo-tools-section" style="padding-top:0">
+      <div class="wrap">
+        <div class="seo-tools-section-head">
+          <span class="eyebrow">FAQ</span>
+          <h2>Meta tag checker questions</h2>
+        </div>
+
+        <div class="seo-tools-faq">
+          <details>
+            <summary>Does this tool send my HTML to a server?</summary>
+            <p>No. The pasted HTML is parsed inside your browser by JavaScript.</p>
+          </details>
+          <details>
+            <summary>Is 60 characters a hard title limit?</summary>
+            <p>
+              No. Search engines display titles based on available space and may rewrite
+              them. The length check is guidance for review, not a ranking rule.
+            </p>
+          </details>
+          <details>
+            <summary>Can a missing meta description hurt rankings?</summary>
+            <p>
+              A missing description does not automatically mean a page cannot rank, but
+              a useful description can improve how the page is presented to searchers.
+            </p>
+          </details>
+          <details>
+            <summary>Why does Google show a different title or description?</summary>
+            <p>
+              Google can generate or rewrite snippets when it believes another part of
+              the page better matches a user's query.
+            </p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="seo-tools-final">
+      <div class="wrap">
+        <div class="seo-tools-final-card">
+          <span class="eyebrow">SEO tools</span>
+          <h2>Need another SEO check?</h2>
+          <p>
+            Return to the SEO tools hub for more research, technical and page-review workflows.
+          </p>
+          <div class="seo-tools-actions">
+            <a class="btn" href="/seo-tools/">Browse SEO tools ↗</a>
+            <a class="btn secondary" href="/seo-audit">SEO audit services</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>
+          <a class="brand" href="/">
+            <img alt="Faizan Yousufzai logo" height="65" src="../../assets/images/faizan-logo.webp" width="65">
+            <span>Faizan Yousufzai</span>
+          </a>
+          <p style="max-width:480px;margin-top:16px">
+            SEO specialist and web developer focused on technical clarity,
+            useful content, fast websites, and search-friendly structure.
+          </p>
+        </div>
+
+        <div>
+          <h3>Explore</h3>
+          <p>
+            <a href="/about">About</a><br>
+            <a href="/portfolio">Case Studies</a><br>
+            <a href="/blog/">Blog</a><br>
+            <a href="/seo-tools/">SEO Tools</a>
+          </p>
+        </div>
+
+        <div>
+          <h3>Services</h3>
+          <p>
+            <a href="/technical-seo">Technical SEO</a><br>
+            <a href="/on-page-seo">On-Page SEO</a><br>
+            <a href="/off-page-seo">Off-Page SEO</a><br>
+            <a href="/contact">Contact</a>
+          </p>
+        </div>
+      </div>
+
+      <div class="copyright">
+        © <span data-year>2026</span> Faizan Khan Yousufzai.
+        Built with HTML, CSS and JavaScript.
+        <a href="/privacy-policy">Privacy</a>
+      </div>
+    </div>
+  </footer>
+
+  <script defer src="../../assets/js/main.js"></script>
+  <script defer src="../../assets/js/meta-tag-checker.js"></script>
+</body>
+</html>
