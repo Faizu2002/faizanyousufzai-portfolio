@@ -1,0 +1,10 @@
+/* Three tasteful ad positions per blog/tool page. No overlays or sticky ads. */
+.site-ad{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;clear:both;max-width:100%;margin:28px auto;padding:0 8px;text-align:center}
+.site-ad__label{display:block;font:500 10px/1.3 system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#858b90}
+.site-ad__mount{display:flex;align-items:flex-start;justify-content:center;max-width:100%;min-width:0;min-height:0}
+.site-ad__mount iframe{display:block;border:0;background:transparent;max-width:100%}
+.site-ad--top{margin:18px auto 6px}
+.site-ad--inline,.site-ad--lower{margin:36px auto}
+.site-ad--sidebar{margin:24px auto;max-width:100%;padding:0}
+.site-ad--sidebar .site-ad__mount{width:160px;max-width:100%}
+@media(max-width:767px){.site-ad{margin:22px auto;padding:0 4px}.site-ad--top{margin:14px auto 4px}.site-ad--inline,.site-ad--lower{margin:28px auto}.site-ad__label{font-size:9px}}

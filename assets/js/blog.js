@@ -86,24 +86,11 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-/* __ADSTERRA_CONTENT_PAGES__ */
+/* __SITE_BANNER_ADS__: no pop-under */
 (() => {
-  const src = "https://abscloud.org/1/6175d04997ebb3aaf3273dc66b66464c";
-
-  if (document.querySelector(`script[src="${src}"]`)) return;
-
-  const loadAdsterra = () => {
-    if (document.querySelector(`script[src="${src}"]`)) return;
-
-    const script = document.createElement("script");
-    script.setAttribute("data-cfasync", "false");
-    script.src = src;
-    document.body.appendChild(script);
-  };
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", loadAdsterra, { once: true });
-  } else {
-    loadAdsterra();
-  }
+  if (document.querySelector("script[data-faizan-site-ads]")) return;
+  const script = document.createElement("script");
+  script.src = "/assets/js/site-ads.js";
+  script.setAttribute("data-faizan-site-ads", "");
+  document.head.appendChild(script);
 })();
