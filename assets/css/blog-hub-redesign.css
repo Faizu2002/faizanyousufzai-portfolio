@@ -31,3 +31,16 @@
 .dir-page [hidden]{display:none!important}
 @media(max-width:850px){.dir-grid,.dir-topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dir-section-head,.dir-feature-note{align-items:flex-start;flex-direction:column}.dir-faq-wrap{grid-template-columns:1fr}}
 @media(max-width:560px){.dir-hero{padding:50px 0 36px}.dir-grid,.dir-topic-grid{grid-template-columns:1fr}.dir-card{min-height:0}.dir-section{padding:42px 0}.dir-search-field button{padding:8px 10px}.dir-hero h1{font-size:2.6rem}.dir-feature-note{padding:22px}.dir-filter-wrap{gap:6px}.dir-filter{padding:7px 11px}}
+
+/* Preserve the publishing pipeline's latest-article section while matching the clean layout. */
+.dir-page #latest-posts{padding:62px 0;background:#f6f7f4;border-bottom:1px solid #e2e8e2}
+.dir-page #latest-posts .bloghub-section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:25px}
+.dir-page #latest-posts .bloghub-section-head h2{font-size:clamp(1.65rem,3vw,2.6rem);line-height:1.13}
+.dir-page #latest-posts .bloghub-section-head p{max-width:420px;color:#5a675e}
+.dir-page #latest-posts .bloghub-card-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}
+.dir-page #latest-posts .bloghub-card{background:white;border:1px solid #dfe6df;border-radius:17px;padding:24px;display:flex;flex-direction:column}
+.dir-page #latest-posts .bloghub-card h3{font-size:1.16rem;line-height:1.28;margin:12px 0}
+.dir-page #latest-posts .bloghub-card p{font-size:.88rem;color:#637067}
+.dir-page #latest-posts .bloghub-read{margin-top:auto;font-weight:800;color:#087453}
+@media(max-width:850px){.dir-page #latest-posts .bloghub-card-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.dir-page #latest-posts .bloghub-card-grid{grid-template-columns:1fr}.dir-page #latest-posts .bloghub-section-head{flex-direction:column;align-items:start}}
