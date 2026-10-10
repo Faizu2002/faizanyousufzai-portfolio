@@ -1670,3 +1670,14 @@ body.blog-search-active #start-here{
 .bloghub-sticky-nav{
   z-index:80;
 }
+
+
+/* SEO_TOPIC_NAV_V1 */
+.dir-article-topic{margin:42px 0 0;padding:28px 0;background:#eef4ee;border-top:1px solid #d7e3d8;border-bottom:1px solid #d7e3d8}
+.dir-article-topic .dir-article-topic-inner{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.dir-article-topic .dir-article-topic-meta{display:block;color:#257253;font-weight:850;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase}
+.dir-article-topic .dir-article-topic-title{display:block;color:#15251b;font-size:1.4rem;font-weight:850;line-height:1.25;margin-top:7px}
+.dir-article-topic .dir-article-topic-links{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.dir-article-topic .dir-article-topic-links a{color:#176244;background:#fff;border:1px solid #d3e0d5;border-radius:8px;padding:9px 13px;font-weight:750;font-size:.84rem}
+.dir-article-topic .dir-article-topic-links a:hover{background:#d9f4e4;border-color:#8dc2a4}
+@media(max-width:700px){.dir-article-topic .dir-article-topic-inner{display:block}.dir-article-topic .dir-article-topic-links{justify-content:flex-start;margin-top:18px}}
